@@ -31,6 +31,7 @@ HexFarm Utility Library.
 
 """
 
+import numpy
 import numpy as np
 import scipy
 
@@ -45,6 +46,7 @@ import pint
 import uncertainties
 
 import h5py
+import pandas
 import pandas as pd
 
 import pymc3
