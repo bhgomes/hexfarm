@@ -31,6 +31,8 @@ HexFarm Utility Library.
 
 """
 
+from ._version import __version_info__, __version__
+
 import numpy
 import numpy as np
 import scipy

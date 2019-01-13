@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# tests/__init__.py
+# hexfarm/conversion.py
 #
 #
 # MIT License
@@ -27,6 +27,6 @@
 #
 
 """
-HexFarm Test Suite.
+Utilities for File Conversion.
 
 """

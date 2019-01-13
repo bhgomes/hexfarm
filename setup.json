@@ -1,0 +1,47 @@
+{
+    "name": "hexfarm",
+    "version_file": "hexfarm/_version.py",
+    "description": "Rutgers HEX Computing Utility Library",
+    "long_description_file": "README.md",
+    "long_description_content_type": "text/markdown",
+    "author": "Brandon Gomes",
+    "author_email": "bhgomes.github@gmail.com",
+    "url": "https://github.com/bhgomes/hexfarm",
+    "packages": {
+        "exclude": ["tests"]
+    },
+    "python_requires": ">=3.7.0",
+    "install_requires": [
+        "pytest",
+        "boltons",
+        "aenum",
+        "scipy",
+        "numpy",
+        "sympy",
+        "pandas",
+        "h5py",
+        "pint",
+        "uncertainties",
+        "pymc3",
+        "ipykernel",
+        "matplotlib",
+        "dask",
+        "scikit-hep"
+    ],
+    "extras_require": {
+        "condor": ["htcondor"]
+    },
+    "include_package_data": true,
+    "license": "MIT",
+    "classifiers": [
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.7",
+        "Development Status :: 1 - Planning",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering :: Physics"
+    ]
+}
