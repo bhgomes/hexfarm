@@ -575,7 +575,8 @@ def start_pseudodaemon(directory, *,
 
     """
     directory = Path(directory)
-    directory.mkdir(parents=True)
+    if not directory.exists():
+        directory.mkdir(parents=True)
 
     daemon_config, *files = _pseudodaemon_config(directory, name, log_ext, out_ext, error_ext)
     executable, log_file, output_file, error_file = files
