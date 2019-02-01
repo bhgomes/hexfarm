@@ -486,7 +486,7 @@ class JobConfig(UserList):
         """Representation of Config File."""
         prefix = 'JobConfig('
         path_string = 'path="' + str(self.path) + '"|' if self.path else ''
-        data_string = '[' + str(self.data[0:5])[1:-1] + ('...]' if len(self) > 5 else ']')
+        data_string = '[' + str(self.data[0:5])[1:-1] + (', ...]' if len(self) > 5 else ']')
         return prefix + path_string + data_string + ')'
 
     def __str__(self):
@@ -550,20 +550,20 @@ class JobConfig(UserList):
 
 
 def _pseudodaemon_config(directory, name, log_ext, out_ext, error_ext):
-    """"""
+    """Configure Pseudo-Daemon."""
     executable = directory / (name + '.py')
-    log_file = directory / (name + log_ext)
-    output_file = directory / (name + out_ext)
-    error_file = directory / (name + error_ext)
+    log_file = directory / (name + '.' + log_ext)
+    output_file = directory / (name + '.' + out_ext)
+    error_file = directory / (name + '.' + error_ext)
     daemon_config = JobConfig(path=directory)
     with daemon_config.write_mode as config:
         config.universe = Universe.Vanilla
         config.getenv = True
-        config.initialdir = directory
-        config.log = log_file
-        config.output = output_file
-        config.error = error_file
-        config.executable = executable
+        config.initialdir = directory.absolute()
+        config.log = log_file.absolute()
+        config.output = output_file.absolute()
+        config.error = error_file.absolute()
+        config.executable = executable.absolute()
         config.queue()
     return daemon_config, executable, log_file, output_file, error_file
 
@@ -612,11 +612,11 @@ def start_pseudodaemon(directory, *,
         if __name__ == '__main__':
             sys.exit(main(sys.argv))
     '''.format(name=name,
-               executable=executable,
-               log=log_file,
-               output=output_file,
-               error=error_file)))
+               executable=executable.absolute(),
+               log=log_file.absolute(),
+               output=output_file.absolute(),
+               error=error_file.absolute())))
 
     daemon_config.submit()
-    return directory
+    return directory, daemon_config
 
