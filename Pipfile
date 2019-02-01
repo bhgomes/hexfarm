@@ -5,8 +5,6 @@ verify_ssl = true
 
 [dev-packages]
 pytest = "*"
-boltons = "*"
-aenum = "*"
 
 [packages]
 scipy = "*"
@@ -21,6 +19,15 @@ ipykernel = "*"
 matplotlib = "*"
 dask = "*"
 scikit-hep = "*"
+boltons = "*"
+aenum = "*"
+uproot = "*"
+particle = "*"
+numpythia = "*"
+formulate = "*"
+scikit-learn = "*"
+scikit-optimize = "*"
+glorentz = "*"
 
 [requires]
 python_version = "3.7"

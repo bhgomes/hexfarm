@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/__init__.py
+# hexfarm/root.py
 #
 #
 # MIT License
 #
-# Copyright (c) 2018-2019 Brandon Gomes
+# Copyright (c) 2018 Brandon Gomes
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,28 +27,9 @@
 #
 
 """
-HexFarm Utility Library.
+ROOT Utilities.
 
 """
 
-from ._version import __version_info__, __version__
-
-import numpy
-import numpy as np
-import scipy
-
-# FIXME: import matplotlib
-# FIXME: import matplotlib.pyplot as plt
-
-# TODO: import tensorflow
-
-import sympy
-
-import pint
-import uncertainties
-
-import h5py
-import pandas
-import pandas as pd
-
-import pymc3
+import uproot
+import uproot_methods
