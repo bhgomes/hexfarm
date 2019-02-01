@@ -451,7 +451,7 @@ class JobConfig(UserList):
             config.extend(clean_input(line) for line in f)
         return config
 
-    def __init__(self, *lines, path=''):
+    def __init__(self, *lines, path=Path()):
         """Initialize Config."""
         self.__dict__['_write_mode'] = False
         super().__init__(*lines)
@@ -477,10 +477,19 @@ class JobConfig(UserList):
         """Return Config as Multiline Text."""
         return self.to_text()
 
-    def submit(self, *options, **kwargs):
+    def save(self, path=None):
+        """Save Job File to Path."""
+        if not path:
+            path = self.path
+        path.write_text(self.as_text)
+
+    def submit(self, *options, path=None, **kwargs):
         """Submit Job From Config."""
-        self.result = Command('submit')(self.as_text, *options, **kwargs)
-        return self.result
+        if path:
+            self.save(path=path)
+        else:
+            self.save()
+        return Command('submit')(self.path, *options, **kwargs)
 
     def __repr__(self):
         """Representation of Config File."""
