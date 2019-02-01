@@ -549,7 +549,7 @@ class JobConfig(UserList):
             self.__dict__[name] = value
 
 
-def _pseudodaemon_config(name, log_ext, out_ext, error_ext):
+def _pseudodaemon_config(directory, name, log_ext, out_ext, error_ext):
     """"""
     executable = directory / (name + '.py')
     log_file = directory / (name + log_ext)
@@ -577,7 +577,7 @@ def start_pseudodaemon(directory, *,
     directory = Path(directory)
     directory.mkdir(parents=True)
 
-    daemon_config, *files = _pseudodaemon_config(name, log_ext, out_ext, error_ext)
+    daemon_config, *files = _pseudodaemon_config(directory, name, log_ext, out_ext, error_ext)
     executable, log_file, output_file, error_file = files
     executable.write_text(clean_whitespace('''
         # -*- coding: utf-8 -*-
