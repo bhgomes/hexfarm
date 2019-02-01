@@ -28,6 +28,9 @@ formulate = "*"
 scikit-learn = "*"
 scikit-optimize = "*"
 glorentz = "*"
+iminuit = "*"
+keras = "*"
+dataclasses = "*"
 
 [requires]
 python_version = "3.7"

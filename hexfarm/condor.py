@@ -5,7 +5,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2018 Brandon Gomes
+# Copyright (c) 2018-2019 Brandon Gomes
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -34,12 +34,12 @@ Utilities for the HTCondor Parallel Computing Framework.
 # -------------- Standard Library -------------- #
 
 import logging
-import shlex
 import subprocess
 from collections import UserList
 from contextlib import contextmanager
 from dataclasses import dataclass
 from inspect import cleandoc as clean_whitespace
+from pathlib import Path
 
 # -------------- External Library -------------- #
 
@@ -47,10 +47,10 @@ from aenum import Enum, AutoValue
 
 # -------------- Hexfarm  Library -------------- #
 
-from ..util import classproperty
+from .util import classproperty
 
 
-logger = logging.Logger()
+logger = logging.getLogger(__name__)
 
 
 try:
@@ -65,7 +65,10 @@ class Command:
 
     """
 
-    PREFIX = 'condor_'
+    @classproperty
+    def prefix(cls):
+        """Command Prefix."""
+        return 'condor_'
 
     def __init__(self, name, *args, **kwargs):
         """Initialize Command."""
@@ -76,7 +79,7 @@ class Command:
     @property
     def full_name(self):
         """Get Full Name of Command."""
-        return self.__class__.PREFIX + self.name
+        return type(self).prefix + self.name
 
     def run(self, *args, **kwargs):
         """Run Command."""
@@ -95,178 +98,109 @@ class Command:
         return subprocess.run(['man', self.full_name] + list(args), **kwargs)
 
 
-advertise = Command('advertise')
+COMMAND_LIST = ('advertise',
+                'c-gahp',
+                'c-gahp_worker_thread',
+                'check_userlogs',
+                'checkpoint',
+                'ckpt_server',
+                'cod',
+                'collector',
+                'compile',
+                'config_val',
+                'configure',
+                'continue',
+                'credd',
+                'dagman',
+                'drain',
+                'fetchlog',
+                'findhost',
+                'ft-gahp',
+                'gather_info',
+                'gridmanager',
+                'gridshell',
+                'had',
+                'history',
+                'hold',
+                'init',
+                'install',
+                'kbdd',
+                'master',
+                'master_s',
+                'negotiator',
+                'off',
+                'on',
+                'ping',
+                'power',
+                'preen',
+                'prio',
+                'procd',
+                'q',
+                'qedit',
+                'qsub',
+                'reconfig',
+                'release',
+                'replication',
+                'reschedule',
+                'restart',
+                'rm',
+                'root_switchboard',
+                'router_history',
+                'router_q',
+                'router_rm',
+                'run',
+                'schedd',
+                'set_shutdown',
+                'shadow',
+                'shadow.std',
+                'shadow_s',
+                'ssh_to_job',
+                'startd',
+                'starter',
+                'starter.std',
+                'stats',
+                'status',
+                'store_cred',
+                'submit',
+                'submit_dag',
+                'suspend',
+                'tail',
+                'test_match',
+                'transfer_data',
+                'transferd',
+                'updates_stats',
+                'userlog',
+                'userlog_job_counter',
+                'userprio',
+                'vacate',
+                'vacate_job',
+                'version',
+                'vm-gahp',
+                'vm-gahp-vmware',
+                'vm_vmware',
+                'vm_vmware.pl',
+                'wait',
+                'who')
+
+
+def _make_commands(commands, dct):
+    for name in commands:
+        setname = ('condor_' + name).replace('.', '').replace('-', '_')
+        dct[setname] = Command(name)
+
+
+_make_commands(COMMAND_LIST, globals())
+
+
+class _NameEnum(Enum, settings=AutoValue):
+    """"""
+
+    def __str__(self):
+        """"""
+        return self.name
+
 
-c_gahp = Command('c-gahp')
-
-c_gahp_worker_thread = Command('c-gahp_worker_thread')
-
-checkpoint = Command('checkpoint')
-
-check_userlogs = Command('check_userlogs')
-
-ckpt_server = Command('ckpt_server')
-
-cod = Command('cod')
-
-collector = Command('collector')
-
-compile = Command('compile')
-
-configure = Command('configure')
-
-config_val = Command('config_val')
-
-continue_ = Command('continue')
-
-credd = Command('credd')
-
-dagman = Command('dagman')
-
-drain = Command('drain')
-
-fetchlog = Command('fetchlog')
-
-findhost = Command('findhost')
-
-ft_gahp = Command('ft-gahp')
-
-gather_info = Command('gather_info')
-
-gridmanager = Command('gridmanager')
-
-gridshell = Command('gridshell')
-
-had = Command('had')
-
-history = Command('history')
-
-hold = Command('hold')
-
-init = Command('init')
-
-install = Command('install')
-
-kbdd = Command('kbdd')
-
-master = Command('master')
-
-master_s = Command('master_s')
-
-negotiator = Command('negotiator')
-
-off = Command('off')
-
-on = Command('on')
-
-ping = Command('ping')
-
-power = Command('power')
-
-preen = Command('preen')
-
-prio = Command('prio')
-
-procd = Command('procd')
-
-q = Command('q')
-
-qedit = Command('qedit')
-
-qsub = Command('qsub')
-
-reconfig = Command('reconfig')
-
-release = Command('release')
-
-replication = Command('replication')
-
-reschedule = Command('reschedule')
-
-restart = Command('restart')
-
-rm = Command('rm')
-
-root_switchboard = Command('root_switchboard')
-
-router_history = Command('router_history')
-
-router_q = Command('router_q')
-
-router_rm = Command('router_rm')
-
-run = Command('run')
-
-schedd = Command('schedd')
-
-set_shutdown = Command('set_shutdown')
-
-shadow = Command('shadow')
-
-shadow_s = Command('shadow_s')
-
-# shadow.std
-
-ssh_to_job = Command('ssh_to_job')
-
-startd = Command('startd')
-
-starter = Command('starter')
-
-# starter.std
-
-stats = Command('stats')
-
-status = Command('status')
-
-store_cred = Command('store_cred')
-
-submit = Command('submit')
-
-submit_dag = Command('submit_dag')
-
-suspend = Command('suspend')
-
-tail = Command('tail')
-
-test_match = Command('test_match')
-
-transferd = Command('transferd')
-
-transfer_data = Command('transfer_data')
-
-updates_stats = Command('updates_stats')
-
-userlog = Command('userlog')
-
-userlog_job_counter = Command('userlog_job_counter')
-
-userprio = Command('userprio')
-
-vacate = Command('vacate')
-
-vacate_job = Command('vacate_job')
-
-version = Command('version')
-
-vm_gahp = Command('vm-gahp')
-
-vm_gahp_vmware = Command('vm-gahp-vmware')
-
-vm_vmware = Command('vm_vmware')
-
-# vm_vmware.pl
-
-wait = Command('wait')
-
-who = Command('who')
-
-
-# TODO:
-# locals().extend(map(Command, command_list))
-
-
-class Universe(Enum, settings=AutoValue):
+class Universe(_NameEnum):
     """
     Condor Universe Enum.
 
@@ -282,7 +216,7 @@ class Notification:
 
     """
 
-    class Status(Enum, settings=AutoValue):
+    class Status(_NameEnum):
         """Notification Status."""
         Always, Complete, Error, Never
 
@@ -294,7 +228,7 @@ class Notification:
         return ''
 
 
-class FileTransferMode(Enum, settings=AutoValue):
+class FileTransferMode(_NameEnum):
     """
     File Transfer Mode.
 
@@ -303,7 +237,7 @@ class FileTransferMode(Enum, settings=AutoValue):
     Yes, No, IfNeeded
 
 
-class TransferOutputMode(Enum, settings=AutoValue):
+class TransferOutputMode(_NameEnum):
     """
     Transfer Output Mode.
 
@@ -322,69 +256,11 @@ class JobConfig(UserList):
     def command_names(cls):
         """Get Possible Command Names for Condor Config File."""
         if not hasattr(cls, '_cmd_names'):
-            cls._cmd_names = ('arguments',
-                              'environment',
-                              'error',
-                              'executable',
-                              'getenv',
-                              'input',
-                              'log',
-                              'log_xml',
-                              'notification',
-                              'output',
-                              'priority',
-                              'queue',
-                              'universe',
-                              'rank',
-                              'request_cpus',
-                              'request_disk',
-                              'request_memory',
-                              'request_',
-                              'requirements',
-                              'dont_encrypt_input_files',
-                              'dont_encrypt_output_files',
-                              'encrypt_execute_directory',
-                              'encrypt_input_files',
-                              'encrypt_output_files',
-                              'max_transfer_input_mb',
-                              'max_transfer_output_mb',
-                              'output_destination',
-                              'should_transfer_files',
-                              'skip_filechecks',
-                              'stream_error',
-                              'stream_input',
-                              'stream_output',
-                              'transfer_executable',
-                              'transfer_input_files',
-                              'transfer_output_files',
-                              'transfer_output_remaps',
-                              'when_to_transfer_output',
-                              'max_retries',
-                              'retry_until',
-                              'success_exit_code',
-                              'hold',
-                              'keep_claim_idle',
-                              'leave_in_queue',
-                              'next_job_start_delay',
-                              'on_exit_hold',
-                              'on_exit_hold_reason',
-                              'on_exit_hold_subcode',
-                              'on_exit_remove',
-                              'periodic_hold',
-                              'periodic_hold_reason',
-                              'periodic_hold_subcode',
-                              'periodic_release',
-                              'periodic_remove',
+            cls._cmd_names = ('accounting_group',
+                              'accounting_group_user',
                               'allow_startup_script',
                               'append_files',
-                              'buffer_files',
-                              'buffer_size',
-                              'buffer_block_size',
-                              'compress_files',
-                              'fetch_files',
-                              'file_remaps',
-                              'local_files',
-                              'want_remote_io',
+                              'arguments',
                               'azure_admin_key',
                               'azure_admin_username',
                               'azure_auth_file',
@@ -393,85 +269,15 @@ class JobConfig(UserList):
                               'azure_size',
                               'batch_queue',
                               'boinc_authenticator_file',
-                              'cream_attributes',
-                              'delegate_job_GSI_credentials_lifetime',
-                              'ec2_access_key_id',
-                              'ec2_ami_id',
-                              'ec2_availability_zone',
-                              'ec2_block_device_mapping',
-                              'ec2_ebs_volumes',
-                              'ec2_elastic_ip',
-                              'ec2_iam_profile_arn',
-                              'ec2_iam_profile_name',
-                              'ec2_instance_type',
-                              'ec2_keypair',
-                              'ec2_keypair_file',
-                              'ec2_parameter_names',
-                              'ec2_parameter_',
-                              'ec2_secret_access_key',
-                              'ec2_security_groups',
-                              'ec2_security_ids',
-                              'ec2_spot_price',
-                              'ec2_tag_names',
-                              'ec2_tag_',
-                              'want_name_tag',
-                              'ec2_user_data',
-                              'ec2_user_data_file',
-                              'ec2_vpc_ip',
-                              'ec2_vpc_subnet',
-                              'gce_auth_file',
-                              'gce_image',
-                              'gce_json_file',
-                              'gce_machine_type',
-                              'gce_metadata',
-                              'gce_metadata_file',
-                              'gce_preemptible',
-                              'globus_rematch',
-                              'globus_resubmit',
-                              'globus_rsl',
-                              'grid_resource',
-                              'keystore_alias',
-                              'keystore_file',
-                              'keystore_passphrase_file',
-                              'my_proxy_credential_name',
-                              'my_proxy_host',
-                              'my_proxy_new_proxy_lifetime',
-                              'my_proxy_password',
-                              'my_proxy_refresh_threshold',
-                              'my_proxy_server_dn',
-                              'nordugrid_rsl',
-                              'transfer_error',
-                              'transfer_input',
-                              'transfer_output',
-                              'use_x509userproxy',
-                              'x509userproxy',
-                              'hold_kill_sig',
-                              'jar_files',
-                              'java_vm_args',
-                              'machine_count',
-                              'remove_kill_sig',
-                              'vm_disk',
-                              'vm_checkpoint',
-                              'vm_macaddr',
-                              'vm_memory',
-                              'vm_networking',
-                              'vm_networking_type',
-                              'vm_no_output_vm',
-                              'vm_type',
-                              'vmware_dir',
-                              'vmware_should_transfer_files',
-                              'vmware_snapshot_disk',
-                              'xen_initrd',
-                              'xen_kernel',
-                              'xen_kernel_params',
-                              'xen_root',
-                              'docker_image',
-                              'accounting_group',
-                              'accounting_group_user',
+                              'buffer_block_size',
+                              'buffer_files',
+                              'buffer_size',
+                              'compress_files',
                               'concurrency_limits',
                               'concurrency_limits_expr',
                               'copy_to_spool',
                               'coresize',
+                              'cream_attributes',
                               'cron_day_of_month',
                               'cron_day_of_week',
                               'cron_hour',
@@ -483,30 +289,158 @@ class JobConfig(UserList):
                               'deferral_prep_time',
                               'deferral_time',
                               'deferral_window',
+                              'delegate_job_GSI_credentials_lifetime',
                               'description',
+                              'docker_image',
+                              'dont_encrypt_input_files',
+                              'dont_encrypt_output_files',
+                              'ec2_access_key_id',
+                              'ec2_ami_id',
+                              'ec2_availability_zone',
+                              'ec2_block_device_mapping',
+                              'ec2_ebs_volumes',
+                              'ec2_elastic_ip',
+                              'ec2_iam_profile_arn',
+                              'ec2_iam_profile_name',
+                              'ec2_instance_type',
+                              'ec2_keypair',
+                              'ec2_keypair_file',
+                              'ec2_parameter_',
+                              'ec2_parameter_names',
+                              'ec2_secret_access_key',
+                              'ec2_security_groups',
+                              'ec2_security_ids',
+                              'ec2_spot_price',
+                              'ec2_tag_',
+                              'ec2_tag_names',
+                              'ec2_user_data',
+                              'ec2_user_data_file',
+                              'ec2_vpc_ip',
+                              'ec2_vpc_subnet',
                               'email_attributes',
+                              'encrypt_execute_directory',
+                              'encrypt_input_files',
+                              'encrypt_output_files',
+                              'environment',
+                              'error',
+                              'executable',
+                              'fetch_files',
+                              'file_remaps',
+                              'gce_auth_file',
+                              'gce_image',
+                              'gce_json_file',
+                              'gce_machine_type',
+                              'gce_metadata',
+                              'gce_metadata_file',
+                              'gce_preemptible',
+                              'getenv',
+                              'globus_rematch',
+                              'globus_resubmit',
+                              'globus_rsl',
+                              'grid_resource',
+                              'hold',
+                              'hold_kill_sig',
                               'image_size',
                               'initialdir',
+                              'input',
+                              'jar_files',
+                              'java_vm_args',
                               'job_ad_information_attrs',
                               'job_batch_name',
                               'job_lease_duration',
                               'job_machine_attrs',
-                              'want_graceful_removal',
+                              'job_max_vacate_time',
+                              'keep_claim_idle',
+                              'keystore_alias',
+                              'keystore_file',
+                              'keystore_passphrase_file',
                               'kill_sig',
                               'kill_sig_timeout',
+                              'leave_in_queue',
                               'load_profile',
+                              'local_files',
+                              'log',
+                              'log_xml',
+                              'machine_count',
                               'match_list_length',
-                              'job_max_vacate_time',
                               'max_job_retirement_time',
+                              'max_retries',
+                              'max_transfer_input_mb',
+                              'max_transfer_output_mb',
+                              'my_proxy_credential_name',
+                              'my_proxy_host',
+                              'my_proxy_new_proxy_lifetime',
+                              'my_proxy_password',
+                              'my_proxy_refresh_threshold',
+                              'my_proxy_server_dn',
+                              'next_job_start_delay',
                               'nice_user',
                               'noop_job',
                               'noop_job_exit_code',
                               'noop_job_exit_signal',
+                              'nordugrid_rsl',
+                              'notification',
+                              'on_exit_hold',
+                              'on_exit_hold_reason',
+                              'on_exit_hold_subcode',
+                              'on_exit_remove',
+                              'output',
+                              'output_destination',
+                              'periodic_hold',
+                              'periodic_hold_reason',
+                              'periodic_hold_subcode',
+                              'periodic_release',
+                              'periodic_remove',
+                              'priority',
+                              'queue',
+                              'rank',
                               'remote_initialdir',
+                              'remove_kill_sig',
                               'rendezvousdir',
+                              'request_',
+                              'request_cpus',
+                              'request_disk',
+                              'request_memory',
+                              'requirements',
+                              'retry_until',
                               'run_as_owner',
+                              'should_transfer_files',
+                              'skip_filechecks',
                               'stack_size',
-                              'submit_event_notes')
+                              'stream_error',
+                              'stream_input',
+                              'stream_output',
+                              'submit_event_notes',
+                              'success_exit_code',
+                              'transfer_error',
+                              'transfer_executable',
+                              'transfer_input',
+                              'transfer_input_files',
+                              'transfer_output',
+                              'transfer_output_files',
+                              'transfer_output_remaps',
+                              'universe',
+                              'use_x509userproxy',
+                              'vm_checkpoint',
+                              'vm_disk',
+                              'vm_macaddr',
+                              'vm_memory',
+                              'vm_networking',
+                              'vm_networking_type',
+                              'vm_no_output_vm',
+                              'vm_type',
+                              'vmware_dir',
+                              'vmware_should_transfer_files',
+                              'vmware_snapshot_disk',
+                              'want_graceful_removal',
+                              'want_name_tag',
+                              'want_remote_io',
+                              'when_to_transfer_output',
+                              'x509userproxy',
+                              'xen_initrd',
+                              'xen_kernel',
+                              'xen_kernel_params',
+                              'xen_root')
         return cls._cmd_names
 
     @classmethod
@@ -519,9 +453,9 @@ class JobConfig(UserList):
 
     def __init__(self, *lines, path=''):
         """Initialize Config."""
+        self.__dict__['_write_mode'] = False
         super().__init__(*lines)
         self.path = path
-        self._write_mode = False
 
     @property
     def lines(self):
@@ -550,7 +484,10 @@ class JobConfig(UserList):
 
     def __repr__(self):
         """Representation of Config File."""
-        return f'JobConfig({"path=" + str(path) + "," if path else ""}...)'
+        prefix = 'JobConfig('
+        path_string = 'path="' + str(self.path) + '"|' if self.path else ''
+        data_string = '[' + str(self.data[0:5])[1:-1] + ('...]' if len(self) > 5 else ']')
+        return prefix + path_string + data_string + ')'
 
     def __str__(self):
         """Get Config File as a String."""
@@ -589,6 +526,12 @@ class JobConfig(UserList):
         self.extend(other)
         return self
 
+    def queue(self, *args):
+        """"""
+        arg_string = (' ' + map(str, args)) if args else ''
+        self.append('queue' + arg_string)
+
+    @property
     @contextmanager
     def write_mode(self):
         """Use writing mode to add lines to file."""
@@ -604,3 +547,75 @@ class JobConfig(UserList):
             self.append(self._make_kv_string(name, value))
         else:
             self.__dict__[name] = value
+
+
+def _pseudodaemon_config(name, log_ext, out_ext, error_ext):
+    """"""
+    executable = directory / (name + '.py')
+    log_file = directory / (name + log_ext)
+    output_file = directory / (name + out_ext)
+    error_file = directory / (name + error_ext)
+    daemon_config = JobConfig(path=directory)
+    with daemon_config.write_mode as config:
+        config.universe = Universe.Vanilla
+        config.getenv = True
+        config.initialdir = directory
+        config.log = log_file
+        config.output = output_file
+        config.error = error_file
+        config.executable = executable
+        config.queue()
+    return daemon_config, executable, log_file, output_file, error_file
+
+
+def start_pseudodaemon(directory, *,
+                       name='ddaemon', log_ext='log', out_ext='out', error_ext='error'):
+    """
+    Condor Psuedo-Daemon.
+
+    """
+    directory = Path(directory)
+    directory.mkdir(parents=True)
+
+    daemon_config, *files = _pseudodaemon_config(name, log_ext, out_ext, error_ext)
+    executable, log_file, output_file, error_file = files
+    executable.write_text(clean_whitespace('''
+        # -*- coding: utf-8 -*-
+        # {name} source file
+
+        import logging
+        import sys
+        import time
+        from pathlib import Path
+
+        from hexfarm import condor
+
+        EXECUTABLE = Path('{executable}')
+        LOG_FILE = Path('{log}')
+        OUTPUT_FILE = Path('{output}')
+        ERROR_FILE = Path('{error}')
+
+        logger = logging.getLogger(__name__)
+
+        def main(argv):
+            print('argv:', argv)
+            while True:
+                logger.info('condor queue ...')
+                condor.condor_q('bhgomes')
+                logger.info(EXECUTABLE)
+                logger.info(LOG_FILE)
+                logger.info(OUTPUT_FILE)
+                logger.info(ERROR_FILE)
+                time.sleep(60)
+
+        if __name__ == '__main__':
+            sys.exit(main(sys.argv))
+    '''.format(name=name,
+               executable=executable,
+               log=log_file,
+               output=output_file,
+               error=error_file)))
+
+    daemon_config.submit()
+    return directory
+

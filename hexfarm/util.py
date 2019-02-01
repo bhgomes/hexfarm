@@ -30,3 +30,38 @@
 Hexfarm Utilities.
 
 """
+
+
+def value_or(value, default):
+    """Return Value or Default if Value is None."""
+    return value if value is not None else default
+
+
+def instance_of(types):
+    """Returns Function which Checks Type."""
+    def inner(obj):
+        return isinstance(obj, types)
+    return inner
+
+
+def subclass_of(types):
+    """Returns Function which Checks Subclass."""
+    def inner(obj):
+        return issubclass(obj, types)
+    return inner
+
+
+class classproperty(property):
+    """Class Property."""
+
+    def __get__(self, obj, objtype=None):
+        """Wrap Getter Function."""
+        return super().__get__(objtype)
+
+    def __set__(self, obj, value):
+        """Wrap Setter Function."""
+        return super().__set__(type(obj), value)
+
+    def __delete__(self, obj):
+        """Wrap Deleter Function."""
+        super().__delete__(type(obj))
