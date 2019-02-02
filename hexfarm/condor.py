@@ -594,8 +594,8 @@ def start_pseudodaemon(directory, *,
     daemon_config, *files = configure_pseudodaemon(directory, name, config_ext, log_ext, out_ext, error_ext)
     executable, config, log, output, error = files
     executable.write_text(clean_whitespace('''
-        # -*- coding: utf-8 -*-
         #!/usr/bin/env python3
+        # -*- coding: utf-8 -*-
         # {name} source file
 
         import logging
