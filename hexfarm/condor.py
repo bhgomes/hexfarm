@@ -39,8 +39,11 @@ import subprocess
 from collections import namedtuple, UserList
 from contextlib import contextmanager
 from dataclasses import dataclass
-from inspect import cleandoc as clean_whitespace
+from functools import partial
+from inspect import cleandoc as code_format
+from itertools import starmap
 from pathlib import Path
+from typing import Dict
 
 # -------------- External Library -------------- #
 
@@ -48,7 +51,7 @@ from aenum import Enum, AutoValue
 
 # -------------- Hexfarm  Library -------------- #
 
-from .util import classproperty
+from .util import classproperty, value_or
 
 
 logger = logging.getLogger(__name__)
@@ -458,6 +461,12 @@ class JobConfig(UserList):
         super().__init__(*lines)
         self.path = path
         self._saved = False
+        self._job_id = None
+
+    @property
+    def job_id(self):
+        """Get Cluster ID of Job."""
+        return self._job_id
 
     @property
     def lines(self):
@@ -486,13 +495,31 @@ class JobConfig(UserList):
         path.write_text(self.as_text)
         self._saved = True
 
+    def _extract_job_id(self, text):
+        """Extract JobID from Condor Output."""
+        return text.strip().split()[-1][0:-1]
+
     def submit(self, *options, path=None, **kwargs):
         """Submit Job From Config."""
         if path:
             self.save(path=path)
         elif not self._saved:
             self.save()
-        return Command('submit')(self.path, *options, **kwargs)
+        result = condor_submit(self.path, *options, **kwargs)
+        self._job_id = self._extract_job_id(result)
+        return self._job_id, result
+
+    def hold(self, *args, **kwargs):
+        """Hold Job."""
+        return condor_hold(self.job_id, *args, **kwargs)
+
+    def release(self, *args, **kwargs):
+        """Release Job."""
+        return condor_release(self.job_id, *args, **kwargs)
+
+    def remove(self, *args, **kwargs):
+        """Remove Job."""
+        return condor_rm(self.job_id, *args, **kwargs)
 
     def __repr__(self):
         """Representation of Config File."""
@@ -511,7 +538,7 @@ class JobConfig(UserList):
 
     def add_keyvalues(self, **kwargs):
         """Append Key Value Pairs to Config."""
-        self.extend(map(self._make_kv_string, kwargs.items()))
+        self.extend(starmap(self._make_kv_string, kwargs.items()))
 
     def append(self, value):
         """Append to Config."""
@@ -561,73 +588,237 @@ class JobConfig(UserList):
             self.__dict__[name] = value
 
 
-def configure_pseudodaemon(directory, name, config_ext, log_ext, out_ext, error_ext):
-    """Configure Pseudo-Daemon."""
-    absolute = lambda e: (directory / (name + '.' + e)).absolute()
-    executable, config, log, output, error = map(absolute, ('py', config_ext, log_ext, out_ext, error_ext))
-    daemon_config = JobConfig(path=config)
-    with daemon_config.write_mode as cfg:
-        cfg.universe = Universe.Vanilla
-        cfg.getenv = True
-        cfg.initialdir = directory
-        cfg.log = log
-        cfg.output = output
-        cfg.error = error
-        cfg.executable = executable
-        cfg.queue()
-    return daemon_config, executable, config, log, output, error
+def attach_ext(name, directory, extension):
+    """Attach Extension to File."""
+    return directory / (name + '.' + extension)
 
 
-def start_pseudodaemon(directory, *,
-                       name='pdaemon',
-                       config_ext='config',
-                       log_ext='log',
-                       out_ext='out',
-                       error_ext='error'):
+class ConfigUnit:
     """
-    Condor Psuedo-Daemon.
+    Configuration Unit.
 
     """
-    directory = Path(directory)
-    directory.mkdir(parents=True, exist_ok=True)
 
-    daemon_config, *files = configure_pseudodaemon(directory, name, config_ext, log_ext, out_ext, error_ext)
-    executable, config, log, output, error = files
-    executable.write_text(clean_whitespace('''
-        #!/usr/bin/env python3
-        # -*- coding: utf-8 -*-
-        # {name} source file
+    def __init__(self, name, directory=None, *, exec_ext='py', config_ext='config', log_ext='log', output_ext='out', error_ext='error'):
+        """Post-Initialize ConfigUnit."""
+        self._name = name
+        self._directory = Path(value_or(directory, '.'))
+        self.job_config = JobConfig()
+        self._rebuild(exec_ext, config_ext, log_ext, output_ext, error_ext, first_time=True)
 
-        import logging
-        import sys
-        import time
-        from pathlib import Path
+    @property
+    def file_dictionary(self):
+        """File Dictionary of Keys against Paths."""
+        return {'initialdir': self.directory,
+                'log': self.logfile,
+                'output': self.output,
+                'error': self.errorfile,
+                'executable': self.executable}
 
-        # from hexfarm import condor
+    def _name_map(self):
+        """Map Extentions to Paths."""
+        return partial(attach_ext, self.name, self.directory)
 
-        EXECUTABLE = Path('{executable}')
-        CONFIG_FILE = Path('{config}')
-        LOG_FILE = Path('{log}')
-        OUTPUT_FILE = Path('{output}')
-        ERROR_FILE = Path('{error}')
+    def _rebuild(self, exec_ext='py', config_ext='config', log_ext='log', output_ext='out', error_ext='error', *, first_time=False):
+        """Rebuild Configuration."""
+        name_map = self._name_map()
+        self.executable = name_map(exec_ext)
+        self.configfile = name_map(config_ext)
+        self.logfile = name_map(log_ext)
+        self.output = name_map(output_ext)
+        self.errorfile = name_map(error_ext)
 
-        logger = logging.getLogger(__name__)
+        if not first_time:
+            marked_indices = deque()
+            for i, line in enumerate(self.job_config):
+                if any(line.lower().startswith(key) for key in self.file_dictionary):
+                    marked_indices.append(i)
 
-        def main(argv):
-            print('argv:', argv)
-            while True:
-                logger.info('condor queue ...')
-                # condor.condor_q('bhgomes')
-                logger.info(EXECUTABLE)
-                logger.info(LOG_FILE)
-                logger.info(OUTPUT_FILE)
-                logger.info(ERROR_FILE)
-                time.sleep(60)
+            new_config = JobConfig()
+            index = 0
+            while marked_indices:
+                mark = marked_indices.popleft()
+                if mark > index:
+                    new_config.extend(self.job_config[index:mark])
+                    index = mark
+                if index == mark:
+                    key, _ = map(lambda s: s.strip(), self.job_config[index].strip().split('='))
+                    new_config.add_keyvalues(**{key: self.file_dictionary[key.lower()]})
+                    index += 1
+            new_config.extend(self.job_config[index:])
+            self.job_config = new_config
 
-        if __name__ == '__main__':
-            sys.exit(main(sys.argv))
-    '''.format(name=name, executable=executable, config=config, log=log, output=output, error=error)))
-    executable.chmod(executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        self.job_config.path = self.configfile
 
-    daemon_config.submit()
-    return directory, daemon_config
+    @property
+    def name(self):
+        """Get Name of Config Unit."""
+        return self._name
+
+    @name.setter
+    def name(self, new_name):
+        """Set Name of Config Unit."""
+        self._name = new_name
+        self._rebuild(first_time=False)
+
+    @property
+    def directory(self):
+        """Get Home Directory of Config Unit."""
+        return self._directory
+
+    @directory.setter
+    def directory(self, new_directory):
+        """Set Home Directory of Config Unit."""
+        self._directory = new_directory
+        self._rebuild(first_time=False)
+
+    def make_job_config(self, initial_vars, post_vars, *, save_configuration=False, absolute_paths=True, **kwargs):
+        """Make Job Config."""
+        configuration = JobConfig(path=self.configfile)
+        configuration.add_keyvalues(**initial_vars)
+
+        map_absolute = (lambda p: p.absolute()) if absolute_paths else (lambda p: p)
+        with configuration.write_mode as config:
+            config.initialdir = map_absolute(self.directory)
+            config.log = map_absolute(self.logfile)
+            config.output = map_absolute(self.output)
+            config.error = map_absolute(self.errorfile)
+            config.executable = map_absolute(self.executable)
+
+        configuration.add_keyvalues(**post_vars)
+        configuration.add_keyvalues(**kwargs)
+        if save_configuration:
+            self.job_config = configuration
+        return configuration
+
+    @property
+    def as_text(self):
+        """Return Job Config as Text."""
+        return self.job_config.as_text
+
+    def save(self, *args, make_new_config=False, **kwargs):
+        """Save Config Setup."""
+        if not self.directory.exists():
+            self.directory.mkdir(parents=True, exist_ok=True)
+        if make_new_config:
+            self.make_job_config(*args, save_configuration=True, **kwargs)
+        return self.job_config.save(path=self.configfile)
+
+    def submit(self, *args, **kwargs):
+        """Submit Job."""
+        return self.job_config.submit(*args, **kwargs)
+
+
+class PseudoDaemon(ConfigUnit):
+    """
+    Condor PseudoDaemon.
+
+    """
+
+    @classproperty
+    def source_header(cls):
+        """Default Source Header."""
+        return code_format('''
+            #!/usr/bin/env python3
+            # -*- coding: utf-8 -*-
+
+            # ])--===-----o---o-oo-- <> |pseudo-daemon| <> --oo-o---o-----===--([ #
+
+            import sys
+            import time
+            import logging
+
+            logger = logging.getLogger(__name__)
+            ''')
+
+    @classproperty
+    def source_try_hexfarm_import(cls):
+        """Default Hexfarm Import."""
+        return code_format('''
+            try:
+                import hexfarm as hxf
+                from hexfarm import condor
+            except ImportError:
+                pass
+            ''')
+
+    @classproperty
+    def source_main_wrapper(cls):
+        """Default Main Wrapper."""
+        return code_format('''
+            if __name__ == '__main__':
+                sys.exit(main(sys.argv))
+            ''')
+
+    @classproperty
+    def source_footer(cls):
+        """Default Footer."""
+        return '\n\n'.join((cls.source_main_wrapper,
+                            '# [(--===-----+---+-++-- >< |#############| >< --++-+---o-----===--)] #'))
+
+    @classproperty
+    def default_source(cls):
+        """Default Source Code."""
+        return '\n\n'.join((cls.source_header,
+                            cls.source_try_hexfarm_import,
+                            code_format('''
+                                def main(argv):
+                                    argv = argv[1:]
+                                    print(argv, len(argv), 'args')
+                                    return 0
+                                '''),
+                            cls.source_footer))
+
+    def __init__(self, name, directory=None, source=None, *args, quick_start=False, **kwargs):
+        """Initialize PseudoDaemon."""
+        super().__init__(name, directory=directory, *args, **kwargs)
+        self.source = value_or(source, type(self).default_source)
+        if quick_start:
+            self.make_job_config(initial_vars={'universe': Universe.Vanilla, 'getenv': True},
+                                 post_vars={'stream_output': True, 'stream_error': True},
+                                 save_configuration=True)
+            self.job_config.queue()
+            self.generate_executable(self.source)
+            self.start()
+
+    def generate_executable(self, source=None, *, rewrite=True):
+        """Generate PseudoDaemon Source Code."""
+        if not self.directory.exists():
+            self.directory.mkdir(parents=True, exist_ok=True)
+        if rewrite and self.executable.exists():
+            self.executable.unlink()
+        self.executable.touch(exist_ok=True)
+        self.executable.write_text(value_or(source, type(self).default_source))
+        self.executable.chmod(self.executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        return self.executable
+
+    def start(self, *args, **kwargs):
+        """Start PseudoDaemon."""
+        return self.submit(*args, **kwargs)
+
+    def pause(self, timeout=None):
+        """Pause PseudoDaemon."""
+        self.job_config.hold()
+        if timeout:
+            time.sleep(timeout)
+            self.unpause()
+
+    def unpause(self):
+        """Unpause PseudoDaemon."""
+        self.job_config.release()
+
+    def stop(self):
+        """Stop PseudoDaemon."""
+        self.job_config.remove()
+
+    def clone(self, n=1):
+        """Clone PseudoDaemon."""
+        return NotImplemented
+
+    def shadow(self, n=1):
+        """Shadow PseudoDaemon."""
+        return NotImplemented
+
+    def protect(self, n=1):
+        """Protect PseudoDaemon."""
+        return NotImplemented
