@@ -595,6 +595,7 @@ def start_pseudodaemon(directory, *,
     executable, config, log, output, error = files
     executable.write_text(clean_whitespace('''
         # -*- coding: utf-8 -*-
+        #!/usr/bin/env python3
         # {name} source file
 
         import logging
@@ -602,7 +603,7 @@ def start_pseudodaemon(directory, *,
         import time
         from pathlib import Path
 
-        from hexfarm import condor
+        # from hexfarm import condor
 
         EXECUTABLE = Path('{executable}')
         CONFIG_FILE = Path('{config}')
@@ -616,7 +617,7 @@ def start_pseudodaemon(directory, *,
             print('argv:', argv)
             while True:
                 logger.info('condor queue ...')
-                condor.condor_q('bhgomes')
+                # condor.condor_q('bhgomes')
                 logger.info(EXECUTABLE)
                 logger.info(LOG_FILE)
                 logger.info(OUTPUT_FILE)
@@ -626,7 +627,7 @@ def start_pseudodaemon(directory, *,
         if __name__ == '__main__':
             sys.exit(main(sys.argv))
     '''.format(name=name, executable=executable, config=config, log=log, output=output, error=error)))
-    executable.chmod(stat.S_IEXEC)
+    executable.chmod(executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     daemon_config.submit()
     return directory, daemon_config
