@@ -35,7 +35,7 @@ Utilities for the HTCondor Parallel Computing Framework.
 
 import logging
 import subprocess
-from collections import UserList
+from collections import namedtuple, UserList
 from contextlib import contextmanager
 from dataclasses import dataclass
 from inspect import cleandoc as clean_whitespace
@@ -456,6 +456,7 @@ class JobConfig(UserList):
         self.__dict__['_write_mode'] = False
         super().__init__(*lines)
         self.path = path
+        self._saved = False
 
     @property
     def lines(self):
@@ -482,12 +483,13 @@ class JobConfig(UserList):
         if not path:
             path = self.path
         path.write_text(self.as_text)
+        self._saved = True
 
     def submit(self, *options, path=None, **kwargs):
         """Submit Job From Config."""
         if path:
             self.save(path=path)
-        else:
+        elif not self._saved:
             self.save()
         return Command('submit')(self.path, *options, **kwargs)
 
@@ -536,7 +538,7 @@ class JobConfig(UserList):
         return self
 
     def queue(self, *args):
-        """"""
+        """Add Queue to Config."""
         arg_string = (' ' + map(str, args)) if args else ''
         self.append('queue' + arg_string)
 
@@ -558,27 +560,29 @@ class JobConfig(UserList):
             self.__dict__[name] = value
 
 
-def _pseudodaemon_config(directory, name, log_ext, out_ext, error_ext):
+def configure_pseudodaemon(directory, name, config_ext, log_ext, out_ext, error_ext):
     """Configure Pseudo-Daemon."""
-    executable = directory / (name + '.py')
-    log_file = directory / (name + '.' + log_ext)
-    output_file = directory / (name + '.' + out_ext)
-    error_file = directory / (name + '.' + error_ext)
-    daemon_config = JobConfig(path=directory)
-    with daemon_config.write_mode as config:
-        config.universe = Universe.Vanilla
-        config.getenv = True
-        config.initialdir = directory.absolute()
-        config.log = log_file.absolute()
-        config.output = output_file.absolute()
-        config.error = error_file.absolute()
-        config.executable = executable.absolute()
-        config.queue()
-    return daemon_config, executable, log_file, output_file, error_file
+    absolute = lambda e: (directory / (name + '.' + e)).absolute()
+    executable, config, log, output, error = map(absolute, ('py', config_ext, log_ext, out_ext, error_ext))
+    daemon_config = JobConfig(path=config)
+    with daemon_config.write_mode as cfg:
+        cfg.universe = Universe.Vanilla
+        cfg.getenv = True
+        cfg.initialdir = directory
+        cfg.log = log
+        cfg.output = output
+        cfg.error = error
+        cfg.executable = executable
+        cfg.queue()
+    return daemon_config, executable, config, log, output, error
 
 
 def start_pseudodaemon(directory, *,
-                       name='ddaemon', log_ext='log', out_ext='out', error_ext='error'):
+                       name='pdaemon',
+                       config_ext='config',
+                       log_ext='log',
+                       out_ext='out',
+                       error_ext='error'):
     """
     Condor Psuedo-Daemon.
 
@@ -587,8 +591,8 @@ def start_pseudodaemon(directory, *,
     if not directory.exists():
         directory.mkdir(parents=True)
 
-    daemon_config, *files = _pseudodaemon_config(directory, name, log_ext, out_ext, error_ext)
-    executable, log_file, output_file, error_file = files
+    daemon_config, *files = configure_pseudodaemon(directory, name, config_ext, log_ext, out_ext, error_ext)
+    executable, config, log, output, error = files
     executable.write_text(clean_whitespace('''
         # -*- coding: utf-8 -*-
         # {name} source file
@@ -601,6 +605,7 @@ def start_pseudodaemon(directory, *,
         from hexfarm import condor
 
         EXECUTABLE = Path('{executable}')
+        CONFIG_FILE = Path('{config}')
         LOG_FILE = Path('{log}')
         OUTPUT_FILE = Path('{output}')
         ERROR_FILE = Path('{error}')
@@ -620,11 +625,7 @@ def start_pseudodaemon(directory, *,
 
         if __name__ == '__main__':
             sys.exit(main(sys.argv))
-    '''.format(name=name,
-               executable=executable.absolute(),
-               log=log_file.absolute(),
-               output=output_file.absolute(),
-               error=error_file.absolute())))
+    '''.format(name=name, executable=executable, config=config, log=log, output=output, error=error)))
 
     daemon_config.submit()
     return directory, daemon_config
