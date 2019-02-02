@@ -33,6 +33,7 @@ Utilities for the HTCondor Parallel Computing Framework.
 
 # -------------- Standard Library -------------- #
 
+import stat
 import logging
 import subprocess
 from collections import namedtuple, UserList
@@ -588,8 +589,7 @@ def start_pseudodaemon(directory, *,
 
     """
     directory = Path(directory)
-    if not directory.exists():
-        directory.mkdir(parents=True)
+    directory.mkdir(parents=True, exist_ok=True)
 
     daemon_config, *files = configure_pseudodaemon(directory, name, config_ext, log_ext, out_ext, error_ext)
     executable, config, log, output, error = files
@@ -626,7 +626,7 @@ def start_pseudodaemon(directory, *,
         if __name__ == '__main__':
             sys.exit(main(sys.argv))
     '''.format(name=name, executable=executable, config=config, log=log, output=output, error=error)))
+    executable.chmod(stat.S_IEXEC)
 
     daemon_config.submit()
     return directory, daemon_config
-
