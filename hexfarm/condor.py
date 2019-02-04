@@ -100,7 +100,11 @@ class Command:
 
     def run(self, *args, **kwargs):
         """Run Command."""
-        return subprocess.run([self.full_name] + self.__args + list(args), **self.__kwargs, **kwargs)
+        return subprocess.run([self.full_name] + self.__args + list(args),
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              **self.__kwargs,
+                              **kwargs)
 
     def __call__(self, *args, **kwargs):
         """Run Command."""
@@ -282,7 +286,7 @@ class Job:
         """Create Job from Condor Submit."""
         obj = cls()
         obj._submit_output = submit_output
-        obj._job_id = cls._extract_job_id(submit_output)
+        obj._job_id = cls._extract_job_id(submit_output.stdout.decode('utf-8'))
         obj._config = config
         return obj
 
@@ -824,12 +828,10 @@ class PseudoDaemon(ConfigUnit):
                                 '''),
                             cls.source_footer))
 
-    def __init__(self, name, directory=None, source=None, *args, quick_start=False, **kwargs):
+    def __init__(self, name, directory=None, source=None, *args, **kwargs):
         """Initialize PseudoDaemon."""
         super().__init__(name, directory=directory, *args, **kwargs)
         self.source = value_or(source, type(self).default_source)
-        if quick_start:
-            self.quick_start()
 
     def quick_start(self):
         """Quick Start PseudoDaemon."""
@@ -838,7 +840,7 @@ class PseudoDaemon(ConfigUnit):
                              save_configuration=True)
         self.job_config.queue()
         self.generate_executable(self.source)
-        self.start()
+        return self.start()
 
     def generate_executable(self, source=None, *, rewrite=True):
         """Generate PseudoDaemon Source Code."""
