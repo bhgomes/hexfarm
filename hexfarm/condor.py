@@ -215,8 +215,8 @@ _make_commands(COMMANDS, globals())
 
 def current_jobs(*usernames):
     """List the Current Jobs by Users."""
-    search = ' '.join(usernames)
-    text = condor_q(search).stdout.decode('utf-8').strip().split('\n')
+    query = condor_q(' '.join(usernames)) if usernames else condor_q()
+    text = query.stdout.decode('utf-8').strip().split('\n')
     user_dict = dict()
     for job_id, name, *_ in list(map(lambda l: l.strip().split(), text))[2:-2]:
         if name not in user_dict:
