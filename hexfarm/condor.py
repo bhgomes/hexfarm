@@ -226,10 +226,10 @@ def current_jobs(*usernames):
 
 
 class _NameEnum(Enum, settings=AutoValue):
-    """"""
+    """Named Enum Objects."""
 
     def __str__(self):
-        """"""
+        """Get Name as String."""
         return self.name
 
 
@@ -258,7 +258,7 @@ class Notification:
 
     def __str__(self):
         """"""
-        return ''
+        return NotImplemented
 
 
 class FileTransferMode(_NameEnum):
