@@ -63,8 +63,8 @@ __all__ = ('logger',
            'Notification',
            'FileTransferMode',
            'TransferOutputMode',
-           'JobConfig',
            'Job',
+           'JobConfig',
            'ConfigUnit',
            'PseudoDaemon')
 
@@ -272,12 +272,16 @@ class Job:
     @classmethod
     def _extract_job_id(cls, text):
         """Extract JobID from Condor Output."""
-        return text.strip().split()[-1][0:-1]
+        try:
+            return text.strip().split()[-1][0:-1]
+        except IndexError:
+            return None
 
     @classmethod
     def _construct_job(cls, submit_output, config):
         """Create Job from Condor Submit."""
         obj = cls()
+        obj._submit_output = submit_output
         obj._job_id = cls._extract_job_id(submit_output)
         obj._config = config
         return obj
@@ -285,13 +289,20 @@ class Job:
     @classmethod
     def submit(cls, config, *args, **kwargs):
         """Submit Configuration and Return Job Object."""
-        result = condor_submit(config.path, *args, **kwargs)
-        return cls._construct_job(result, config), result
+        try:
+            config_path = config.path
+        except AttributeError:
+            return cls()
+        return cls._construct_job(condor_submit(config_path, *args, **kwargs), config)
 
     def __init__(self):
         """Initialize Job Object."""
-        self._job_id = None
-        self._config = None
+        self._submit_output, self._job_id, self._config = None, None, None
+
+    @property
+    def submit_output(self):
+        """Output from Condor Submit."""
+        return self._submit_output
 
     @property
     def job_id(self):
@@ -838,4 +849,4 @@ class PseudoDaemon(ConfigUnit):
 
     def start(self, *args, **kwargs):
         """Start PseudoDaemon."""
-        return self.submit(*args, **kwargs)[0]
+        return self.submit(*args, **kwargs)
