@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/experimental/condor.py
+# hexfarm/condor.py
 #
 #
 # MIT License
