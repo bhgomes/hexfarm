@@ -34,7 +34,8 @@
         "formulate",
         "iminuit",
         "keras",
-        "dataclasses"
+        "dataclasses",
+        "requests"
     ],
     "extras_require": {
         "condor": ["htcondor"]
