@@ -769,8 +769,6 @@ class PseudoDaemon(ConfigUnit):
             #!/usr/bin/env python3
             # -*- coding: utf-8 -*-
 
-            # ])--===-----o---o-oo-- <> |pseudo-daemon| <> --oo-o---o-----===--([ #
-
             import sys
             import time
             import logging
@@ -800,8 +798,7 @@ class PseudoDaemon(ConfigUnit):
     @classproperty
     def source_footer(cls):
         """Default Footer."""
-        return '\n\n'.join((cls.source_main_wrapper,
-                            '# [(--===-----+---+-++-- >< |#############| >< --++-+---o-----===--)] #'))
+        return cls.source_main_wrapper + '\n'
 
     @classproperty
     def default_source(cls):
