@@ -323,7 +323,7 @@ class Job:
         """Check if Job is Empty."""
         return self._job_id is None or self._config is None
 
-    def remove(self):
+    def remove(self, *args, **kwargs):
         """Remove Job."""
         return condor_rm(self.job_id, *args, **kwargs)
 
