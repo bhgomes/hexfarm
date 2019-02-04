@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/conversion.py
+# hexfarm/ml/__init__.py
 #
 #
 # MIT License
@@ -27,6 +27,6 @@
 #
 
 """
-Utilities for File Conversion.
+Hexfarm Machine Learning Library.
 
 """

@@ -36,14 +36,13 @@ Utilities for the HTCondor Parallel Computing Framework.
 import stat
 import logging
 import subprocess
-from collections import namedtuple, UserList
+from collections import UserList
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import partial
 from inspect import cleandoc as code_format
 from itertools import starmap
 from pathlib import Path
-from typing import Dict
 
 # -------------- External Library -------------- #
 
@@ -57,8 +56,22 @@ from .util import classproperty, value_or
 logger = logging.getLogger(__name__)
 
 
+__all__ = ('logger',
+           'Command',
+           'COMMANDS',
+           'Universe',
+           'Notification',
+           'FileTransferMode',
+           'TransferOutputMode',
+           'JobConfig',
+           'Job',
+           'ConfigUnit',
+           'PseudoDaemon')
+
+
 try:
     import htcondor as ht
+    __all__ = __all__ + ht.__all__
 except Exception:
     logger.info('HTCondor could not be imported.')
 
@@ -102,89 +115,89 @@ class Command:
         return subprocess.run(['man', self.full_name] + list(args), **kwargs)
 
 
-COMMAND_LIST = ('advertise',
-                'c-gahp',
-                'c-gahp_worker_thread',
-                'check_userlogs',
-                'checkpoint',
-                'ckpt_server',
-                'cod',
-                'collector',
-                'compile',
-                'config_val',
-                'configure',
-                'continue',
-                'credd',
-                'dagman',
-                'drain',
-                'fetchlog',
-                'findhost',
-                'ft-gahp',
-                'gather_info',
-                'gridmanager',
-                'gridshell',
-                'had',
-                'history',
-                'hold',
-                'init',
-                'install',
-                'kbdd',
-                'master',
-                'master_s',
-                'negotiator',
-                'off',
-                'on',
-                'ping',
-                'power',
-                'preen',
-                'prio',
-                'procd',
-                'q',
-                'qedit',
-                'qsub',
-                'reconfig',
-                'release',
-                'replication',
-                'reschedule',
-                'restart',
-                'rm',
-                'root_switchboard',
-                'router_history',
-                'router_q',
-                'router_rm',
-                'run',
-                'schedd',
-                'set_shutdown',
-                'shadow',
-                'shadow.std',
-                'shadow_s',
-                'ssh_to_job',
-                'startd',
-                'starter',
-                'starter.std',
-                'stats',
-                'status',
-                'store_cred',
-                'submit',
-                'submit_dag',
-                'suspend',
-                'tail',
-                'test_match',
-                'transfer_data',
-                'transferd',
-                'updates_stats',
-                'userlog',
-                'userlog_job_counter',
-                'userprio',
-                'vacate',
-                'vacate_job',
-                'version',
-                'vm-gahp',
-                'vm-gahp-vmware',
-                'vm_vmware',
-                'vm_vmware.pl',
-                'wait',
-                'who')
+COMMANDS = ('advertise',
+            'c-gahp',
+            'c-gahp_worker_thread',
+            'check_userlogs',
+            'checkpoint',
+            'ckpt_server',
+            'cod',
+            'collector',
+            'compile',
+            'config_val',
+            'configure',
+            'continue',
+            'credd',
+            'dagman',
+            'drain',
+            'fetchlog',
+            'findhost',
+            'ft-gahp',
+            'gather_info',
+            'gridmanager',
+            'gridshell',
+            'had',
+            'history',
+            'hold',
+            'init',
+            'install',
+            'kbdd',
+            'master',
+            'master_s',
+            'negotiator',
+            'off',
+            'on',
+            'ping',
+            'power',
+            'preen',
+            'prio',
+            'procd',
+            'q',
+            'qedit',
+            'qsub',
+            'reconfig',
+            'release',
+            'replication',
+            'reschedule',
+            'restart',
+            'rm',
+            'root_switchboard',
+            'router_history',
+            'router_q',
+            'router_rm',
+            'run',
+            'schedd',
+            'set_shutdown',
+            'shadow',
+            'shadow.std',
+            'shadow_s',
+            'ssh_to_job',
+            'startd',
+            'starter',
+            'starter.std',
+            'stats',
+            'status',
+            'store_cred',
+            'submit',
+            'submit_dag',
+            'suspend',
+            'tail',
+            'test_match',
+            'transfer_data',
+            'transferd',
+            'updates_stats',
+            'userlog',
+            'userlog_job_counter',
+            'userprio',
+            'vacate',
+            'vacate_job',
+            'version',
+            'vm-gahp',
+            'vm-gahp-vmware',
+            'vm_vmware',
+            'vm_vmware.pl',
+            'wait',
+            'who')
 
 
 def _make_commands(commands, dct):
@@ -193,7 +206,7 @@ def _make_commands(commands, dct):
         dct[setname] = Command(name)
 
 
-_make_commands(COMMAND_LIST, globals())
+_make_commands(COMMANDS, globals())
 
 
 class _NameEnum(Enum, settings=AutoValue):
@@ -248,6 +261,64 @@ class TransferOutputMode(_NameEnum):
     """
 
     OnExit, OnExitOrEvict
+
+
+class Job:
+    """
+    Job Object.
+
+    """
+
+    @classmethod
+    def _extract_job_id(cls, text):
+        """Extract JobID from Condor Output."""
+        return text.strip().split()[-1][0:-1]
+
+    @classmethod
+    def _construct_job(cls, submit_output, config):
+        """Create Job from Condor Submit."""
+        obj = cls()
+        obj._job_id = cls._extract_job_id(submit_output)
+        obj._config = config
+        return obj
+
+    @classmethod
+    def submit(cls, config, *args, **kwargs):
+        """Submit Configuration and Return Job Object."""
+        result = condor_submit(config.path, *args, **kwargs)
+        return cls._construct_job(result, config), result
+
+    def __init__(self):
+        """Initialize Job Object."""
+        self._job_id = None
+        self._config = None
+
+    @property
+    def job_id(self):
+        """Get JobID of Job."""
+        return self._job_id
+
+    @property
+    def config(self):
+        """Get Configuration for Job."""
+        return self._config
+
+    @property
+    def is_empty_job(self):
+        """Check if Job is Empty."""
+        return self._job_id is None or self._config is None
+
+    def remove(self):
+        """Remove Job."""
+        return condor_rm(self.job_id, *args, **kwargs)
+
+    def hold(self, *args, **kwargs):
+        """Hold Job."""
+        return condor_hold(self.job_id, *args, **kwargs)
+
+    def release(self, *args, **kwargs):
+        """Release Job."""
+        return condor_release(self.job_id, *args, **kwargs)
 
 
 class JobConfig(UserList):
@@ -461,12 +532,6 @@ class JobConfig(UserList):
         super().__init__(*lines)
         self.path = path
         self._saved = False
-        self._job_id = None
-
-    @property
-    def job_id(self):
-        """Get Cluster ID of Job."""
-        return self._job_id
 
     @property
     def lines(self):
@@ -495,31 +560,13 @@ class JobConfig(UserList):
         path.write_text(self.as_text)
         self._saved = True
 
-    def _extract_job_id(self, text):
-        """Extract JobID from Condor Output."""
-        return text.strip().split()[-1][0:-1]
-
     def submit(self, *options, path=None, **kwargs):
         """Submit Job From Config."""
         if path:
             self.save(path=path)
         elif not self._saved:
             self.save()
-        result = condor_submit(self.path, *options, **kwargs)
-        self._job_id = self._extract_job_id(result)
-        return self._job_id, result
-
-    def hold(self, *args, **kwargs):
-        """Hold Job."""
-        return condor_hold(self.job_id, *args, **kwargs)
-
-    def release(self, *args, **kwargs):
-        """Release Job."""
-        return condor_release(self.job_id, *args, **kwargs)
-
-    def remove(self, *args, **kwargs):
-        """Remove Job."""
-        return condor_rm(self.job_id, *args, **kwargs)
+        return Job.submit(self, *options, **kwargs)
 
     def __repr__(self):
         """Representation of Config File."""
@@ -736,7 +783,7 @@ class PseudoDaemon(ConfigUnit):
         """Default Hexfarm Import."""
         return code_format('''
             try:
-                import hexfarm as hxf
+                import hexfarm as hex
                 from hexfarm import condor
             except ImportError:
                 pass
@@ -794,31 +841,4 @@ class PseudoDaemon(ConfigUnit):
 
     def start(self, *args, **kwargs):
         """Start PseudoDaemon."""
-        return self.submit(*args, **kwargs)
-
-    def pause(self, timeout=None):
-        """Pause PseudoDaemon."""
-        self.job_config.hold()
-        if timeout:
-            time.sleep(timeout)
-            self.unpause()
-
-    def unpause(self):
-        """Unpause PseudoDaemon."""
-        self.job_config.release()
-
-    def stop(self):
-        """Stop PseudoDaemon."""
-        self.job_config.remove()
-
-    def clone(self, n=1):
-        """Clone PseudoDaemon."""
-        return NotImplemented
-
-    def shadow(self, n=1):
-        """Shadow PseudoDaemon."""
-        return NotImplemented
-
-    def protect(self, n=1):
-        """Protect PseudoDaemon."""
-        return NotImplemented
+        return self.submit(*args, **kwargs)[0]

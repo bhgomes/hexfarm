@@ -31,6 +31,7 @@ glorentz = "*"
 iminuit = "*"
 keras = "*"
 dataclasses = "*"
+requests = "*"
 
 [requires]
 python_version = "3.7"

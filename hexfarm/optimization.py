@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/conversion.py
+# hexfarm/optimization.py
 #
 #
 # MIT License
@@ -27,6 +27,6 @@
 #
 
 """
-Utilities for File Conversion.
+Utilities for Optimization.
 
 """

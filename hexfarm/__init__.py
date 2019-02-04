@@ -33,22 +33,10 @@ HexFarm Utility Library.
 
 from ._version import __version_info__, __version__
 
-# import numpy
-# import numpy as np
-# import scipy
 
-# FIXME: import matplotlib
-# FIXME: import matplotlib.pyplot as plt
+import numpy as np
+import scipy as sci
+import sympy as sym
 
-# TODO: import tensorflow
 
-# import sympy
-
-# import pint
-# import uncertainties
-
-# import h5py
-# import pandas
-# import pandas as pd
-
-# import pymc3
+__all__ = tuple(np.__all__ + sci.__all__ + sym.__all__)
