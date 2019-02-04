@@ -829,12 +829,16 @@ class PseudoDaemon(ConfigUnit):
         super().__init__(name, directory=directory, *args, **kwargs)
         self.source = value_or(source, type(self).default_source)
         if quick_start:
-            self.make_job_config(initial_vars={'universe': Universe.Vanilla, 'getenv': True},
-                                 post_vars={'stream_output': True, 'stream_error': True},
-                                 save_configuration=True)
-            self.job_config.queue()
-            self.generate_executable(self.source)
-            self.start()
+            self.quick_start()
+
+    def quick_start(self):
+        """Quick Start PseudoDaemon."""
+        self.make_job_config(initial_vars={'universe': Universe.Vanilla, 'getenv': True},
+                             post_vars={'stream_output': True, 'stream_error': True},
+                             save_configuration=True)
+        self.job_config.queue()
+        self.generate_executable(self.source)
+        self.start()
 
     def generate_executable(self, source=None, *, rewrite=True):
         """Generate PseudoDaemon Source Code."""
