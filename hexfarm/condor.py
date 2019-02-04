@@ -218,7 +218,7 @@ def current_jobs(*usernames):
     search = ' '.join(usernames)
     text = condor_q(search).stdout.decode('utf-8').strip().split('\n')
     user_dict = dict()
-    for job_id, name, *_ in map(lambda l: l.strip().split(), text):
+    for job_id, name, *_ in list(map(lambda l: l.strip().split(), text))[2:-2]:
         if name not in user_dict:
             user_dict[name] = []
         user_dict[name].append(job_id)
