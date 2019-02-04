@@ -40,7 +40,7 @@ from collections import UserList
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import partial
-from inspect import cleandoc as code_format
+from inspect import cleandoc
 from itertools import starmap
 from pathlib import Path
 
@@ -211,6 +211,18 @@ def _make_commands(commands, dct):
 
 
 _make_commands(COMMANDS, globals())
+
+
+def current_jobs(*usernames):
+    """List the Current Jobs by Users."""
+    search = ' '.join(usernames)
+    text = condor_q(search).stdout.decode('utf-8').strip().split('\n')
+    user_dict = dict()
+    for job_id, name, *_ in map(lambda l: l.strip().split(), text):
+        if name not in user_dict:
+            user_dict[name] = []
+        user_dict[name].append(job_id)
+    return user_dict
 
 
 class _NameEnum(Enum, settings=AutoValue):
@@ -778,9 +790,14 @@ class PseudoDaemon(ConfigUnit):
     """
 
     @classproperty
+    def clean_source(cls, source):
+        """Clean Source Code."""
+        return cleandoc(source)
+
+    @classproperty
     def source_header(cls):
         """Default Source Header."""
-        return code_format('''
+        return cls.clean_source('''
             #!/usr/bin/env python3
             # -*- coding: utf-8 -*-
 
@@ -794,7 +811,7 @@ class PseudoDaemon(ConfigUnit):
     @classproperty
     def source_try_hexfarm_import(cls):
         """Default Hexfarm Import."""
-        return code_format('''
+        return cls.clean_source('''
             try:
                 import hexfarm as hex
                 from hexfarm import condor
@@ -805,7 +822,7 @@ class PseudoDaemon(ConfigUnit):
     @classproperty
     def source_main_wrapper(cls):
         """Default Main Wrapper."""
-        return code_format('''
+        return cls.clean_source('''
             if __name__ == '__main__':
                 sys.exit(main(sys.argv))
             ''')
@@ -820,7 +837,7 @@ class PseudoDaemon(ConfigUnit):
         """Default Source Code."""
         return '\n\n'.join((cls.source_header,
                             cls.source_try_hexfarm_import,
-                            code_format('''
+                            cls.clean_source('''
                                 def main(argv):
                                     argv = argv[1:]
                                     print(argv, len(argv), 'args')

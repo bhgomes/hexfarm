@@ -31,7 +31,7 @@ Hexfarm Utilities.
 
 """
 
-__all__ = ('value_or', 'instance_of', 'subclass_of', 'classproperty')
+__all__ = ('value_or', 'instance_of', 'subclass_of', 'subdict', 'classproperty')
 
 
 def value_or(value, default):
@@ -51,6 +51,17 @@ def subclass_of(types):
     def inner(obj):
         return issubclass(obj, types)
     return inner
+
+
+def subdict(d, *keys, key_filter=lambda o: o, value_filter=lambda o: o):
+    """Return Subdictionary"""
+    keys = set(d.keys()) - set(keys)
+    out = {}
+    for k in filter(key_filter, keys):
+        value = d[k]
+        if value_filter(value):
+            out[k] = value
+    return out
 
 
 class classproperty(property):
