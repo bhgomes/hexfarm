@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/condor.py
+# hexfarm/condor/core.py
 #
 #
 # MIT License
@@ -27,14 +27,13 @@
 #
 
 """
-Utilities for the HTCondor Parallel Computing Framework.
+Core Utilities for the HTCondor Parallel Computing Framework.
 
 """
 
 # -------------- Standard Library -------------- #
 
 import stat
-import logging
 import subprocess
 from collections import UserList
 from collections.abc import Mapping
@@ -53,27 +52,17 @@ from aenum import Enum, AutoValue
 from .util import classproperty, value_or, partial
 
 
-logger = logging.getLogger(__name__)
-
-
-__all__ = ('logger',
-           'Command',
+__all__ = ('Command',
            'COMMANDS',
            'Universe',
            'Notification',
            'FileTransferMode',
            'TransferOutputMode',
            'Job',
+           'JobMap',
            'JobConfig',
            'ConfigUnit',
            'PseudoDaemon')
-
-
-try:
-    import htcondor as ht
-    __all__ = __all__ + ht.__all__
-except Exception:
-    logger.info('HTCondor could not be imported.')
 
 
 class Command:
@@ -205,8 +194,9 @@ COMMANDS = ('advertise',
 
 
 def _make_commands(commands, command_dict):
+    """Build Condor Commands for Globals."""
     for name in commands:
-        setname = ('condor_' + name).replace('.', '').replace('-', '_')
+        setname = (Command.prefix + name).replace('.', '').replace('-', '_')
         command_dict[setname] = Command(name)
 
 
@@ -239,20 +229,13 @@ class _NameEnum(Enum, settings=AutoValue):
 
 
 class Universe(_NameEnum):
-    """
-    Condor Universe Enum.
-
-    """
-
+    """Condor Universe Enum."""
     Vanilla, Standard, Scheduler, Local, Grid, Java, VM, Parallel, Docker
 
 
 @dataclass
 class Notification:
-    """
-    Notification Structure.
-
-    """
+    """Notification Structure."""
 
     class Status(_NameEnum):
         """Notification Status."""
@@ -262,25 +245,17 @@ class Notification:
     status: Status
 
     def __str__(self):
-        """"""
+        """Get String Representation of Notification."""
         return NotImplemented
 
 
 class FileTransferMode(_NameEnum):
-    """
-    File Transfer Mode.
-
-    """
-
+    """File Transfer Mode."""
     Yes, No, IfNeeded
 
 
 class TransferOutputMode(_NameEnum):
-    """
-    Transfer Output Mode.
-
-    """
-
+    """Transfer Output Mode."""
     OnExit, OnExitOrEvict
 
 
