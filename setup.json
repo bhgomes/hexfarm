@@ -29,13 +29,15 @@
         "boltons",
         "aenum",
         "uproot",
+        "histbook",
+        "rootpy",
         "particle",
         "numpythia",
         "formulate",
         "iminuit",
         "keras",
         "dataclasses",
-        "requests"
+        "paramiko"
     ],
     "extras_require": {
         "condor": ["htcondor"]

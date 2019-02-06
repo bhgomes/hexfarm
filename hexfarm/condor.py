@@ -37,9 +37,9 @@ import stat
 import logging
 import subprocess
 from collections import UserList
+from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
-from functools import partial
 from inspect import cleandoc
 from itertools import starmap
 from pathlib import Path
@@ -50,7 +50,7 @@ from aenum import Enum, AutoValue
 
 # -------------- Hexfarm  Library -------------- #
 
-from .util import classproperty, value_or
+from .util import classproperty, value_or, partial
 
 
 logger = logging.getLogger(__name__)
@@ -204,10 +204,10 @@ COMMANDS = ('advertise',
             'who')
 
 
-def _make_commands(commands, dct):
+def _make_commands(commands, command_dict):
     for name in commands:
         setname = ('condor_' + name).replace('.', '').replace('-', '_')
-        dct[setname] = Command(name)
+        command_dict[setname] = Command(name)
 
 
 _make_commands(COMMANDS, globals())
@@ -223,6 +223,11 @@ def current_jobs(*usernames):
             user_dict[name] = []
         user_dict[name].append(job_id)
     return user_dict
+
+
+def current_job_configurations(*usernames):
+    """"""
+    return NotImplemented
 
 
 class _NameEnum(Enum, settings=AutoValue):
@@ -337,7 +342,9 @@ class Job:
 
     def remove(self, *args, **kwargs):
         """Remove Job."""
-        return condor_rm(self.job_id, *args, **kwargs)
+        result = condor_rm(self.job_id, *args, **kwargs)
+        self._job_id = None
+        return result
 
     def hold(self, *args, **kwargs):
         """Hold Job."""
@@ -346,6 +353,65 @@ class Job:
     def release(self, *args, **kwargs):
         """Release Job."""
         return condor_release(self.job_id, *args, **kwargs)
+
+
+class JobMap(Mapping):
+    """
+    Job Mapping Object.
+
+    """
+
+    def __init__(self, *jobs):
+        """Initialize Job Mapping."""
+        self._jobs = {job.job_id: job for job in jobs}
+
+    @property
+    def job_ids(self):
+        """Return Job Ids."""
+        return self.keys()
+
+    @property
+    def jobs(self):
+        """Return Jobs."""
+        return self.values()
+
+    def __getitem__(self, key):
+        """Get the Job at given Id."""
+        return self._jobs[key]
+
+    def __iter__(self):
+        """Return Iterator over Jobs."""
+        return iter(self._jobs)
+
+    def __len__(self):
+        """Return Length of Job List."""
+        return len(self._jobs)
+
+    def clear(self):
+        """Clear All Jobs."""
+        for job_id in list(self):
+            self.remove_job(job_id)
+
+    def submit_job(self, config, *args, **kwargs):
+        """Submit Job from Config."""
+        job = Job.submit(config, *args, **kwargs)
+        self.data[job.job_id] = job
+        return job.job_id
+
+    def remove_job(self, job_id, *args, **kwargs):
+        """Remove Job."""
+        job = self.data[job_id]
+        result = job.remove(*args, **kwargs)
+        del self.data[job_id]
+        return job, result
+
+    def hold_job(self, job_id, *args, **kwargs):
+        """Hold Job."""
+        return self.data[job_id].hold(*args, **kwargs)
+
+    def release_job(self, job_id ,*args, **kwargs):
+        """Release Job."""
+        return self.data[job_id].release(*args, **kwargs)
 
 
 class JobConfig(UserList):

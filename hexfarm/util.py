@@ -31,7 +31,16 @@ Hexfarm Utilities.
 
 """
 
-__all__ = ('value_or', 'instance_of', 'subclass_of', 'subdict', 'classproperty')
+# -------------- Standard Library -------------- #
+
+from functools import partial
+
+# -------------- Hexfarm  Library -------------- #
+
+
+def flip(f):
+    """Swap Arguments."""
+    return lambda left, right: f(right, left)
 
 
 def value_or(value, default):
@@ -41,16 +50,12 @@ def value_or(value, default):
 
 def instance_of(types):
     """Returns Function which Checks Type."""
-    def inner(obj):
-        return isinstance(obj, types)
-    return inner
+    return partial(flip(isinstance), types)
 
 
 def subclass_of(types):
     """Returns Function which Checks Subclass."""
-    def inner(obj):
-        return issubclass(obj, types)
-    return inner
+    return partial(flip(issubclass), types)
 
 
 def subdict(d, *keys, key_filter=lambda o: o, value_filter=lambda o: o):
