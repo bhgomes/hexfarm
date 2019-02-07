@@ -703,10 +703,11 @@ class JobMap(Mapping):
 
     """
 
-    def __init__(self, *jobs, remove_completed_jobs=False, source_config=None):
+    def __init__(self, *jobs, remove_completed_jobs=False, remove_when_clearing=True, source_config=None):
         """Initialize Job Mapping."""
         self._jobs = job_dict(*jobs)
         self.remove_completed_jobs = remove_completed_jobs
+        self.remove_when_clearing = remove_when_clearing
         if source_config is not None:
             self.attach_config(source_config)
 
@@ -738,16 +739,33 @@ class JobMap(Mapping):
 
     def clear(self):
         """Clear All Jobs."""
-        for job_id in self:
-            self.remove_job(job_id)
+        if self.remove_when_clearing:
+            for job_id in self:
+                self.remove_job(job_id)
+        else:
+            self._jobs.clear()
 
-    def extend(self, other):
+    def update(self, other):
         """Extend Job Map."""
-        self._jobs.extend(other)
+        self._jobs.update(other)
 
     def append(self, jobs):
         """Append Jobs to JobMap."""
-        self.extend(job_dict(jobs))
+        self.update(job_dict(jobs))
+
+    def pop(self, key, *default):
+        """Pop Job Out of Map."""
+        if len(default) not in (0, 1):
+            raise TypeError('Only 1 Default Argument.')
+        try:
+            if self.remove_when_clearing:
+                return self.remove_job(key)[0]
+            else:
+                return self._jobs.pop(key)
+        except KeyError:
+            if len(default) == 1:
+                return default
+            raise KeyError('Job Not Found.')
 
     def remove_job(self, job_id, *args, **kwargs):
         """Remove Job."""
