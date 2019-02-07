@@ -37,7 +37,8 @@
         "iminuit",
         "keras",
         "dataclasses",
-        "paramiko"
+        "paramiko",
+        "keyring"
     ],
     "extras_require": {
         "condor": ["htcondor"]

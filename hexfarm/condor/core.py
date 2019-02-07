@@ -38,18 +38,18 @@ import subprocess
 from collections import UserList
 from collections.abc import Mapping
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from inspect import cleandoc
 from itertools import starmap
-from pathlib import Path
 
 # -------------- External Library -------------- #
 
 from aenum import Enum, AutoValue
+from path import Path
 
 # -------------- Hexfarm  Library -------------- #
 
-from .util import classproperty, value_or, partial
+from ..util import classproperty, value_or, partial
 
 
 __all__ = ('Command',
@@ -87,11 +87,11 @@ class Command:
         """Get Full Name of Command."""
         return type(self).prefix + self.name
 
-    def run(self, *args, **kwargs):
+    def run(self, *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs):
         """Run Command."""
         return subprocess.run([self.full_name] + self.__args + list(args),
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE,
+                              stdout=stdout,
+                              stderr=stderr,
                               **self.__kwargs,
                               **kwargs)
 
@@ -215,11 +215,6 @@ def current_jobs(*usernames):
     return user_dict
 
 
-def current_job_configurations(*usernames):
-    """"""
-    return NotImplemented
-
-
 class _NameEnum(Enum, settings=AutoValue):
     """Named Enum Objects."""
 
@@ -243,10 +238,13 @@ class Notification:
 
     email: str
     status: Status
+    attributes: List[str] = field(default_factory=list)
 
     def __str__(self):
         """Get String Representation of Notification."""
-        return NotImplemented
+        status_and_user = '\n'.join(('notification=' + self.status, 'notify-user=' + self.email))
+        attributes = ('\nemail_attributes=' if self.attributes else '') + ','.join(self.attributes)
+        return status_and_user + attributes
 
 
 class FileTransferMode(_NameEnum):
@@ -259,134 +257,20 @@ class TransferOutputMode(_NameEnum):
     OnExit, OnExitOrEvict
 
 
-class Job:
-    """
-    Job Object.
+class SubmitVariable(_NameEnum):
+    """Submit Variables."""
+    ClusterId, Cluster, ProcId, Process, Node, Step, ItemIndex, Row, Item
 
-    """
-
-    @classmethod
-    def _extract_job_id(cls, text):
-        """Extract JobID from Condor Output."""
-        try:
-            return text.strip().split()[-1][0:-1]
-        except IndexError:
-            return None
-
-    @classmethod
-    def _construct_job(cls, submit_output, config):
-        """Create Job from Condor Submit."""
-        obj = cls()
-        obj._submit_output = submit_output
-        obj._job_id = cls._extract_job_id(submit_output.stdout.decode('utf-8'))
-        obj._config = config
-        return obj
-
-    @classmethod
-    def submit(cls, config, *args, **kwargs):
-        """Submit Configuration and Return Job Object."""
-        try:
-            config_path = config.path
-        except AttributeError:
-            return cls()
-        return cls._construct_job(condor_submit(config_path, *args, **kwargs), config)
-
-    def __init__(self):
-        """Initialize Job Object."""
-        self._submit_output, self._job_id, self._config = None, None, None
-
-    @property
-    def submit_output(self):
-        """Output from Condor Submit."""
-        return self._submit_output
-
-    @property
-    def job_id(self):
-        """Get JobID of Job."""
-        return self._job_id
-
-    @property
-    def config(self):
-        """Get Configuration for Job."""
-        return self._config
-
-    @property
-    def is_empty_job(self):
-        """Check if Job is Empty."""
-        return self._job_id is None or self._config is None
-
-    def remove(self, *args, **kwargs):
-        """Remove Job."""
-        result = condor_rm(self.job_id, *args, **kwargs)
-        self._job_id = None
-        return result
-
-    def hold(self, *args, **kwargs):
-        """Hold Job."""
-        return condor_hold(self.job_id, *args, **kwargs)
-
-    def release(self, *args, **kwargs):
-        """Release Job."""
-        return condor_release(self.job_id, *args, **kwargs)
+    def __str__(self):
+        """Get String Form of Variable."""
+        return '$(' + super().__str__() + ')'
 
 
-class JobMap(Mapping):
-    """
-    Job Mapping Object.
-
-    """
-
-    def __init__(self, *jobs):
-        """Initialize Job Mapping."""
-        self._jobs = {job.job_id: job for job in jobs}
-
-    @property
-    def job_ids(self):
-        """Return Job Ids."""
-        return self.keys()
-
-    @property
-    def jobs(self):
-        """Return Jobs."""
-        return self.values()
-
-    def __getitem__(self, key):
-        """Get the Job at given Id."""
-        return self._jobs[key]
-
-    def __iter__(self):
-        """Return Iterator over Jobs."""
-        return iter(self._jobs)
-
-    def __len__(self):
-        """Return Length of Job List."""
-        return len(self._jobs)
-
-    def clear(self):
-        """Clear All Jobs."""
-        for job_id in list(self):
-            self.remove_job(job_id)
-
-    def submit_job(self, config, *args, **kwargs):
-        """Submit Job from Config."""
-        job = Job.submit(config, *args, **kwargs)
-        self.data[job.job_id] = job
-        return job.job_id
-
-    def remove_job(self, job_id, *args, **kwargs):
-        """Remove Job."""
-        job = self.data[job_id]
-        result = job.remove(*args, **kwargs)
-        del self.data[job_id]
-        return job, result
-
-    def hold_job(self, job_id, *args, **kwargs):
-        """Hold Job."""
-        return self.data[job_id].hold(*args, **kwargs)
-
-    def release_job(self, job_id ,*args, **kwargs):
-        """Release Job."""
-        return self.data[job_id].release(*args, **kwargs)
+def extract_job_ids(condor_submit_text):
+    """Extract Job Ids from Condor Submit Text."""
+    count, *_, cluster = condor_submit_text.strip().split()
+    for process in map(str, range(int(count))):
+        yield cluster + process
 
 
 class JobConfig(UserList):
@@ -594,12 +478,13 @@ class JobConfig(UserList):
             config.extend(clean_input(line) for line in f)
         return config
 
-    def __init__(self, *lines, path=Path()):
+    def __init__(self, *lines, path=None):
         """Initialize Config."""
         self.__dict__['_write_mode'] = False
         super().__init__(*lines)
-        self.path = path
+        self.path = value_or(path, Path())
         self._saved = False
+        self._log_file = None
 
     @property
     def lines(self):
@@ -613,28 +498,34 @@ class JobConfig(UserList):
 
     def to_text(self, *, add_newline=True):
         """Return Config as Multiline Text."""
-        base = '\n' if add_newline else ''
-        return base.join(self)
+        return ('\n' if add_newline else '').join(self)
 
     @property
     def as_text(self):
         """Return Config as Multiline Text."""
         return self.to_text()
 
+    @property
+    def log_file(self):
+        """Get Log File."""
+        return self._log_file
+
     def save(self, path=None):
         """Save Job File to Path."""
         if not path:
             path = self.path
-        path.write_text(self.as_text)
-        self._saved = True
+        if path != self.path or not self._saved:
+            path.write_text(self.as_text)
+            self._saved = True
 
-    def submit(self, *options, path=None, **kwargs):
+    def submit(self, *args, path=None, **kwargs):
         """Submit Job From Config."""
         if path:
             self.save(path=path)
         elif not self._saved:
             self.save()
-        return Job.submit(self, *options, **kwargs)
+        submit_output = condor_submit(self.path, *args, **kwargs).stdout.decode('utf-8')
+        return tuple(Job(job_id, self, self.log_file) for job_id in extract_job_ids(submit_output))
 
     def __repr__(self):
         """Representation of Config File."""
@@ -651,23 +542,34 @@ class JobConfig(UserList):
         """Make Key-Value String."""
         return str(key) + '=' + str(value)
 
-    def add_keyvalues(self, **kwargs):
+    def add_pairs(self, **kwargs):
         """Append Key Value Pairs to Config."""
         self.extend(starmap(self._make_kv_string, kwargs.items()))
 
+    def _open_pair(self, pair_string):
+        """Open Pair and Check for Keys and Values."""
+        lines = pair_string.strip().split('\n')
+        if not lines:
+            return None, None
+        if len(lines) == 1:
+            key, value, *extra = tuple(map(lambda o: o.strip(), lines.split('=')))
+            if extra:
+                raise ValueError('Bad Parse.')
+            return key, value
+        else:
+            return tuple(_open_pair(line) for line in lines)
+
     def append(self, value):
         """Append to Config."""
-        if not isinstance(value, str):
-            super().append(str(value))
-        else:
-            super().append(value)
+        key, internal_value = self._open_pair(value)
+        if key == 'log':
+            self._log_file = internal_value
+        super().append(str(value))
 
     def extend(self, other):
         """Extend Config by another Config."""
-        if not isinstance(other, type(self)):
-            super().extend(map(str, other))
-        else:
-            super().extend(other)
+        for obj in other:
+            self.append(str(obj))
 
     def __add__(self, other):
         """Create Sum of Config."""
@@ -679,6 +581,24 @@ class JobConfig(UserList):
         """Add to Config In Place."""
         self.extend(other)
         return self
+
+    def add_comments(self, *comments):
+        """Add Comments to Config."""
+        if not comments:
+            return
+        if len(comments) == 1:
+            comments = comments.split('\n')
+        self.extend(map(lambda c: '# ' + c, comments))
+
+    def add_email_notification(self, *notification):
+        """Add Email Notification to Config."""
+        if len(notification) == 1 and isinstance(notification[0], Notification):
+            notification = str(notification)
+        elif len(notification) == 2:
+            notification = str(Notification(*notification))
+        else:
+            raise TypeError('Not a Notification Type.')
+        self.extend(notification.split('\n'))
 
     def queue(self, *args):
         """Add Queue to Config."""
@@ -701,6 +621,138 @@ class JobConfig(UserList):
             self.append(self._make_kv_string(name, value))
         else:
             self.__dict__[name] = value
+
+
+class Job:
+    """
+    Job Object.
+
+    """
+
+    def __init__(self, config, job_id, log_file=None):
+        """Initialize Job Object."""
+        self._config = config
+        self._job_id = job_id
+        self._log_file = log_file
+        if not log_file:
+            try:
+                self._log_file = self.config.log_file
+            except AttributeError:
+                pass
+
+    @property
+    def config(self):
+        """Get Configuration for Job."""
+        return self._config
+
+    @property
+    def job_id(self):
+        """Get JobID of Job."""
+        return self._job_id
+
+    @property
+    def log_file(self):
+        """Get Path of Log File for this Job."""
+        return self.log_file
+
+    @property
+    def is_empty_job(self):
+        """Check if Job is Empty."""
+        return self._job_id is None or self._config is None
+
+    def remove(self, *args, **kwargs):
+        """Remove Job."""
+        result = condor_rm(self.job_id, *args, **kwargs)
+        self._job_id = None
+        return result
+
+    def hold(self, *args, **kwargs):
+        """Hold Job."""
+        return condor_hold(self.job_id, *args, **kwargs)
+
+    def release(self, *args, **kwargs):
+        """Release Job."""
+        return condor_release(self.job_id, *args, **kwargs)
+
+    def check(self, wait_timeout=None):
+        """Check if Job Has Completed."""
+        args = ['-wait', str(wait_timeout)] if wait_timeout else []
+        if self.log_file:
+            return bool(condor_wait(self.log_file, *args).returncode)
+        else:
+            return NotImplemented
+
+    @property
+    def has_completed(self):
+        """Check if Job Has Completed."""
+        if not hasattr(self, '_completed'):
+            self._completed = self.check(wait_timeout=1)
+        return self._completed
+
+    def on_completion(self, f, *args, wait_timeout=None, **kwargs):
+        """Run On Completion of Job."""
+        if self.check(wait_timeout=wait_timeout):
+            return f(self, *args, **kwargs)
+        return False
+
+
+class JobMap(Mapping):
+    """
+    Job Mapping Object.
+
+    """
+
+    def __init__(self, *jobs):
+        """Initialize Job Mapping."""
+        self._jobs = {job.job_id: job for job in jobs}
+
+    @property
+    def job_ids(self):
+        """Return Job Ids."""
+        return self.keys()
+
+    @property
+    def jobs(self):
+        """Return Jobs."""
+        return self.values()
+
+    def __getitem__(self, key):
+        """Get the Job at given Id."""
+        return self._jobs[key]
+
+    def __iter__(self):
+        """Return Iterator over Jobs."""
+        return iter(self._jobs)
+
+    def __len__(self):
+        """Return Length of Job List."""
+        return len(self._jobs)
+
+    def clear(self):
+        """Clear All Jobs."""
+        for job_id in list(self):
+            self.remove_job(job_id)
+
+    def submit_job(self, config, *args, **kwargs):
+        """Submit Job from Config."""
+        job = Job.submit(config, *args, **kwargs)
+        self.data[job.job_id] = job
+        return job.job_id
+
+    def remove_job(self, job_id, *args, **kwargs):
+        """Remove Job."""
+        job = self.data[job_id]
+        result = job.remove(*args, **kwargs)
+        del self.data[job_id]
+        return job, result
+
+    def hold_job(self, job_id, *args, **kwargs):
+        """Hold Job."""
+        return self.data[job_id].hold(*args, **kwargs)
+
+    def release_job(self, job_id ,*args, **kwargs):
+        """Release Job."""
+        return self.data[job_id].release(*args, **kwargs)
 
 
 def attach_ext(name, directory, extension):
@@ -758,7 +810,7 @@ class ConfigUnit:
                     index = mark
                 if index == mark:
                     key, _ = map(lambda s: s.strip(), self.job_config[index].strip().split('='))
-                    new_config.add_keyvalues(**{key: self.file_dictionary[key.lower()]})
+                    new_config.add_pairs(**{key: self.file_dictionary[key.lower()]})
                     index += 1
             new_config.extend(self.job_config[index:])
             self.job_config = new_config
@@ -790,8 +842,7 @@ class ConfigUnit:
     def make_job_config(self, initial_vars, post_vars, *, save_configuration=False, absolute_paths=True, **kwargs):
         """Make Job Config."""
         configuration = JobConfig(path=self.configfile)
-        configuration.add_keyvalues(**initial_vars)
-
+        configuration.add_pairs(**initial_vars)
         map_absolute = (lambda p: p.absolute()) if absolute_paths else (lambda p: p)
         with configuration.write_mode as config:
             config.initialdir = map_absolute(self.directory)
@@ -799,9 +850,8 @@ class ConfigUnit:
             config.output = map_absolute(self.output)
             config.error = map_absolute(self.errorfile)
             config.executable = map_absolute(self.executable)
-
-        configuration.add_keyvalues(**post_vars)
-        configuration.add_keyvalues(**kwargs)
+        configuration.add_pairs(**post_vars)
+        configuration.add_pairs(**kwargs)
         if save_configuration:
             self.job_config = configuration
         return configuration

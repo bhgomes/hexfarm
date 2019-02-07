@@ -31,6 +31,65 @@ Daemon Utilities for the HTCondor Parallel Computing Framework.
 
 """
 
+# -------------- Standard Library -------------- #
+
+from dataclasses import dataclass
+from path import Path
+
+# -------------- External Library -------------- #
+
+from paramiko import SSHClient, AutoAddPolicy
+
 # -------------- Hexfarm  Library -------------- #
 
 from .core import *
+
+
+def ssh_connection(hostname, port=22, username=None, password=None, *, missing_host_key_policy=AutoAddPolicy, **kwargs):
+    """Establish SSH Connection."""
+    client = SSHClient()
+    client.set_missing_host_key_policy(missing_host_key_policy())
+    connection = client.connect(hostname=hostname,
+                                port=port,
+                                username=username,
+                                assword=password,
+                                **kwargs)
+    return connection, client
+
+
+def sftp_connection(hostname, port=22, username=None, password=None, *args, **kwargs):
+    """Establish SFTP Connection."""
+    connection, client = ssh_connection(hostname,
+                                        port=port,
+                                        username=username,
+                                        password=password,
+                                        *args,
+                                        **kwargs)
+    return connection, client.open_sftp()
+
+
+def get_data(connection, *, remove_source=False):
+    """Get Data from Connection."""
+    def inner_get(localpath, remotepath):
+        atrributes = connection.put(localpath, remotepath)
+        if remove_source:
+            try:
+                connection.remove(remotepath)
+            except IOError:
+                connection.rmdir(remotepath)
+        return attributes
+    return inner_put
+
+
+def put_data(connection, *, remove_source=False):
+    """Put Data Across Connection."""
+    def inner_put(localpath, remotepath):
+        atrributes = connection.put(localpath, remotepath)
+        if remove_source:
+            localpath = Path(localpath)
+            if localpath.isdir():
+                localpath.removedirs_p()
+            elif localpath.isfile():
+                localpath.remove_p()
+        return attributes
+    return inner_put
