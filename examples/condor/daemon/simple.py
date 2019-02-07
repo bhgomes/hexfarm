@@ -23,6 +23,9 @@ DAEMON_TIMEOUT = 200
 
 JOB_SOURCE = condor.clean_source('''
 
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*- #
+
 import time
 from hexfarm import run_main, with_timeout
 
@@ -39,10 +42,12 @@ def main(argv):
 @run_main()
 def main(argv):
     """Simple Daemon."""
-    config = JobConfig()
+    config = condor.JobConfig()
     directory = Path('.temp/simple_daemon')
+    directory.makedirs_p()
 
     executable = directory / 'job.py'
+    executable.remove_p()
     executable.write_text(JOB_SOURCE)
     condor.add_execute_permissions(executable)
 

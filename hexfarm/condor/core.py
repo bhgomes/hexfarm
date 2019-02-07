@@ -561,7 +561,7 @@ class JobConfig(UserList):
         if not comments:
             return
         if len(comments) == 1:
-            comments = comments.split('\n')
+            comments = comments[0].split('\n')
         self.extend(map(lambda c: '# ' + c, comments))
 
     def add_email_notification(self, *notification):
