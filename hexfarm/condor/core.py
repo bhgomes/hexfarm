@@ -49,7 +49,7 @@ from path import Path
 
 # -------------- Hexfarm  Library -------------- #
 
-from ..shell import decoded, Command
+from ..shell import decoded, Command, me
 from ..util import classproperty, value_or, partial
 
 
@@ -66,16 +66,8 @@ __all__ = ('CondorCommand',
            'PseudoDaemon')
 
 
-class CondorCommand(Command):
-    """
-    Condor Command Object.
-
-    """
-
-    @classproperty
-    def prefix(cls):
-        """Command Prefix."""
-        return 'condor_'
+class CondorCommand(Command, prefix='condor_'):
+    """Condor Command Object."""
 
 
 CONDOR_COMMANDS = ('advertise',
@@ -186,6 +178,12 @@ def current_jobs(*usernames):
             user_dict[name] = []
         user_dict[name].append(job_id)
     return user_dict
+
+
+def my_jobs():
+    """Get My Jobs."""
+    username = me()
+    return current_jobs(username)[username]
 
 
 class _NameEnum(Enum, settings=AutoValue):
@@ -497,8 +495,8 @@ class JobConfig(UserList):
             self.save(path=path)
         elif not self._saved:
             self.save()
-        submit_output = condor_submit(self.path, *args, **kwargs).stdout.decode('utf-8')
-        return tuple(Job(job_id, self, self.log_file) for job_id in extract_job_ids(submit_output))
+        submit_output = decoded(condor_submit(self.path, *args, **kwargs))
+        return tuple(Job(job_id, self, log_file=self.log_file) for job_id in extract_job_ids(submit_output))
 
     def __repr__(self):
         """Representation of Config File."""
@@ -602,10 +600,11 @@ class Job:
 
     """
 
-    def __init__(self, config, job_id, log_file=None):
+    def __init__(self, config, job_id, submitter=me(), log_file=None):
         """Initialize Job Object."""
         self._config = config
         self._job_id = job_id
+        self._submitter = submitter
         self._log_file = log_file
         if not log_file:
             try:
@@ -627,6 +626,11 @@ class Job:
     def log_file(self):
         """Get Path of Log File for this Job."""
         return self.log_file
+
+    @property
+    def submitter(self):
+        """Job Submitter."""
+        return self._submitter
 
     @property
     def is_empty_job(self):
@@ -653,10 +657,7 @@ class Job:
         if self.log_file:
             return bool(condor_wait(self.log_file, *args).returncode)
         else:
-            for job_list in current_jobs().values():
-                if self.job_id in job_list:
-                    return False
-            return True
+            return self.job_id not in current_jobs(self.submitter)[self.submitter]
 
     @property
     def has_completed(self):
