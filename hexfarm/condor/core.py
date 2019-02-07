@@ -38,7 +38,7 @@ from collections import UserList
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from inspect import cleandoc
+from inspect import cleandoc as clean_source
 from itertools import starmap
 from typing import Sequence
 
@@ -60,9 +60,12 @@ __all__ = ('CondorCommand',
            'FileTransferMode',
            'TransferOutputMode',
            'Job',
+           'JobCompletedException',
            'JobMap',
            'JobConfig',
            'ConfigUnit',
+           'clean_source',
+           'add_execute_permissions',
            'PseudoDaemon')
 
 
@@ -673,15 +676,33 @@ class Job:
         return False
 
 
+class JobCompletedException(KeyError):
+    """Job Completed Exception."""
+
+    def __init__(self, job):
+        """Initialize Exception."""
+        super().__init__('Job {job_id} has already Completed.'.format(job_id=job.job_id))
+        self._job = job
+
+    @property
+    def job(self):
+        """Get Job which had Completed."""
+        return self._job
+
+
 class JobMap(Mapping):
     """
     Job Mapping Object.
 
     """
 
-    def __init__(self, *jobs):
+    def __init__(self, *jobs, remove_completed_jobs=False, source_config=None):
         """Initialize Job Mapping."""
-        self._jobs = {job.job_id: job for job in jobs}
+        self._jobs = {}
+        self.append(jobs)
+        self.remove_completed_jobs = remove_completed_jobs
+        if source_config is not None:
+            self.attach_config(source_config)
 
     @property
     def job_ids(self):
@@ -695,7 +716,11 @@ class JobMap(Mapping):
 
     def __getitem__(self, key):
         """Get the Job at given Id."""
-        return self._jobs[key]
+        job = self._jobs[key]
+        if self.remove_completed_jobs and job.has_completed:
+            del self._jobs[key]
+            raise JobCompletedException(job)
+        return job
 
     def __iter__(self):
         """Return Iterator over Jobs."""
@@ -707,29 +732,38 @@ class JobMap(Mapping):
 
     def clear(self):
         """Clear All Jobs."""
-        for job_id in list(self):
+        for job_id in self:
             self.remove_job(job_id)
 
-    def submit_job(self, config, *args, **kwargs):
-        """Submit Job from Config."""
-        job = Job.submit(config, *args, **kwargs)
-        self.data[job.job_id] = job
-        return job.job_id
+    def append(self, jobs):
+        """Append Jobs to """
+        self.extend({job.job_id: job for job in jobs})
 
     def remove_job(self, job_id, *args, **kwargs):
         """Remove Job."""
-        job = self.data[job_id]
+        job = self[job_id]
         result = job.remove(*args, **kwargs)
-        del self.data[job_id]
+        del self._jobs[job_id]
         return job, result
 
     def hold_job(self, job_id, *args, **kwargs):
         """Hold Job."""
-        return self.data[job_id].hold(*args, **kwargs)
+        return self[job_id].hold(*args, **kwargs)
 
     def release_job(self, job_id ,*args, **kwargs):
         """Release Job."""
-        return self.data[job_id].release(*args, **kwargs)
+        return self[job_id].release(*args, **kwargs)
+
+    def append_from_submit(self, config, *args, **kwargs):
+        """Append to JobMap via Config Submit."""
+        jobs = config.submit(*args, **kwargs)
+        self.append(jobs)
+        return jobs
+
+    def attach_config(self, config):
+        """Attach a Configuration File to Submit Events."""
+        self.source_config = config
+        self.submit = partial(self.append_from_submit, self.source_config)
 
 
 def attach_ext(name, directory, extension):
@@ -851,6 +885,11 @@ class ConfigUnit:
         return self.job_config.submit(*args, **kwargs)
 
 
+def add_execute_permissions(path, mode=stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+    """Add Execute Permissions to a Path."""
+    path.chmod(path.stat().st_mode | mode)
+
+
 class PseudoDaemon(ConfigUnit):
     """
     Condor PseudoDaemon.
@@ -858,14 +897,9 @@ class PseudoDaemon(ConfigUnit):
     """
 
     @classproperty
-    def clean_source(cls, source):
-        """Clean Source Code."""
-        return cleandoc(source)
-
-    @classproperty
     def source_header(cls):
         """Default Source Header."""
-        return cls.clean_source('''
+        return clean_source('''
             #!/usr/bin/env python3
             # -*- coding: utf-8 -*-
 
@@ -879,7 +913,7 @@ class PseudoDaemon(ConfigUnit):
     @classproperty
     def source_try_hexfarm_import(cls):
         """Default Hexfarm Import."""
-        return cls.clean_source('''
+        return clean_source('''
             try:
                 import hexfarm as hex
                 from hexfarm import condor
@@ -890,7 +924,7 @@ class PseudoDaemon(ConfigUnit):
     @classproperty
     def source_main_wrapper(cls):
         """Default Main Wrapper."""
-        return cls.clean_source('''
+        return clean_source('''
             if __name__ == '__main__':
                 sys.exit(main(sys.argv))
             ''')
@@ -905,7 +939,7 @@ class PseudoDaemon(ConfigUnit):
         """Default Source Code."""
         return '\n\n'.join((cls.source_header,
                             cls.source_try_hexfarm_import,
-                            cls.clean_source('''
+                            clean_source('''
                                 def main(argv):
                                     argv = argv[1:]
                                     print(argv, len(argv), 'args')
@@ -935,7 +969,7 @@ class PseudoDaemon(ConfigUnit):
             self.executable.unlink()
         self.executable.touch(exist_ok=True)
         self.executable.write_text(value_or(source, type(self).default_source))
-        self.executable.chmod(self.executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        add_execute_permissions(self.executable)
         return self.executable
 
     def start(self, *args, **kwargs):

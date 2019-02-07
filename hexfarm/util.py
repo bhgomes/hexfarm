@@ -33,9 +33,20 @@ Hexfarm Utilities.
 
 # -------------- Standard Library -------------- #
 
-from functools import partial
+import sys
+from functools import partial, wraps
 
 # -------------- Hexfarm  Library -------------- #
+
+
+__all__ = ('identity',
+           'flip',
+           'value_or',
+           'instance_of',
+           'subclass_of',
+           'subdict',
+           'classproperty',
+           'run_main')
 
 
 def identity(x):
@@ -88,3 +99,15 @@ class classproperty(property):
     def __delete__(self, obj):
         """Wrap Deleter Function."""
         super().__delete__(type(obj))
+
+
+def run_main(argv=sys.argv, exit=sys.exit, auto_run=True):
+    """Run Main Function with Given Arguments and Exit Process."""
+    def internal(main):
+        @wraps(main)
+        def wrapper():
+            return exit(main(argv))
+        if auto_run:
+            wrapper()
+        return wrapper
+    return internal

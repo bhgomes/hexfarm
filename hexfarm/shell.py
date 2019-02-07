@@ -44,7 +44,8 @@ from .util import identity, classproperty
 __all__ = ('decoded',
            'Command',
            'me',
-           'whoami')
+           'whoami',
+           'ME')
 
 
 def decoded(output, mode='stdout', encoding='utf-8'):
@@ -114,3 +115,5 @@ class Command:
 
 
 me = whoami = Command('whoami', default_decoded=True, clean_output=lambda o: o.strip())
+
+ME = me()

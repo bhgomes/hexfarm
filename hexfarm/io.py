@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/__main__.py
+# hexfarm/io.py
 #
 #
 # MIT License
@@ -27,21 +27,17 @@
 #
 
 """
-Hexfarm CLI.
+Utilities for IO.
 
 """
 
 # -------------- Standard Library -------------- #
 
+import os
+import sys
+
+# -------------- External Library -------------- #
+
+import path
 
 # -------------- Hexfarm  Library -------------- #
-
-from .util import run_main
-
-
-@run_main()
-def main(argv):
-    """Main Function."""
-    print('NotImplemented')
-    print('argv={argv}'.format(argv=argv))
-    return 0

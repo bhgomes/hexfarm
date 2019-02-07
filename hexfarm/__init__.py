@@ -31,11 +31,26 @@ HexFarm Utility Library.
 
 """
 
-from ._version import __version_info__, __version__
+# -------------- Standard Library -------------- #
 
+import sys
+import time
+
+# -------------- External Library -------------- #
 
 import numpy as np
 import scipy as sci
 import sympy as sym
 
+# -------------- Hexfarm  Library -------------- #
+
+from .condor import HTCONDOR_INSTALLED
+from .shell import ME
 from .util import *
+
+from ._version import __version_info__, __version__
+
+
+def with_timeout(timeout, sleep=time.sleep):
+    sleep(timeout)
+    return True
