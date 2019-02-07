@@ -12,7 +12,7 @@ from path import Path
 
 # -------------- Hexfarm  Library -------------- #
 
-from hexfarm import run_main, with_timeout
+from hexfarm import run_main
 import hexfarm.condor as condor
 
 
@@ -27,7 +27,7 @@ JOB_SOURCE = condor.clean_source('''
 # -*- coding: utf-8 -*- #
 
 import time
-from hexfarm import run_main, with_timeout
+from hexfarm import run_main
 
 @run_main()
 def main(argv):
@@ -42,10 +42,9 @@ def main(argv):
 @run_main()
 def main(argv):
     """Simple Daemon."""
-    config = condor.JobConfig()
     directory = Path('.temp/simple_daemon')
     directory.makedirs_p()
-
+    config = condor.JobConfig(path=directory / 'config.cfg')
     executable = directory / 'job.py'
     executable.remove_p()
     executable.write_text(JOB_SOURCE)

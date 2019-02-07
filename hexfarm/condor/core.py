@@ -243,7 +243,7 @@ class SubmitVariable(_NameEnum):
 
 def extract_job_ids(condor_submit_text):
     """Extract Job Ids from Condor Submit Text."""
-    count, *_, cluster = condor_submit_text.strip().split()
+    _, _, count, *_, cluster = condor_submit_text.strip().split()
     for process in map(str, range(int(count))):
         yield cluster + process
 
