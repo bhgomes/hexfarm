@@ -49,8 +49,3 @@ from .shell import ME
 from .util import *
 
 from ._version import __version_info__, __version__
-
-
-def with_timeout(timeout, sleep=time.sleep):
-    sleep(timeout)
-    return True

@@ -63,9 +63,11 @@ def main(argv):
     job_map = condor.JobMap(remove_completed_jobs=True)
     job_map.attach_config(config)
 
-    while with_timeout(DAEMON_TIMEOUT):
+    while True:
+        print('HERE')
         jobs_running = len(job_map)
         if jobs_running < MAX_JOB_COUNT:
             for _ in range(MAX_JOB_COUNT - jobs_running):
                 job_map.submit()
         print(job_map)
+        time.sleep(DAEMON_TIMEOUT)
