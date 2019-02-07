@@ -33,11 +33,12 @@ Utilities for Shell Processes.
 
 # -------------- Standard Library -------------- #
 
+import shutil
 import subprocess
 
 # -------------- Hexfarm  Library -------------- #
 
-from .util import classproperty
+from .util import identity, classproperty
 
 
 __all__ = ('decoded',
@@ -61,10 +62,11 @@ class Command:
         """Command Prefix."""
         return ''
 
-    def __init__(self, name, *args, default_decoded=False, **kwargs):
+    def __init__(self, name, *args, default_decoded=False, clean_output=identity, **kwargs):
         """Initialize Command."""
         self._name = name
         self._default_decoded = default_decoded
+        self._clean_output = clean_output
         self.__args = list(args)
         self.__kwargs = kwargs
 
@@ -78,7 +80,7 @@ class Command:
         """Get Full Name of Command."""
         return type(self).prefix + self.name
 
-    def run(self, *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, result_decoded=None, **kwargs):
+    def run(self, *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, result_decoded=None, clean_output=None, **kwargs):
         """Run Command."""
         result = subprocess.run([self.full_name] + self.__args + list(args),
                                 stdout=stdout,
@@ -86,9 +88,10 @@ class Command:
                                 **self.__kwargs,
                                 **kwargs)
         if result_decoded is None:
-            return result if not self._default_decoded else decoded(result)
+            result = result if not self._default_decoded else decoded(result)
         else:
-            return result if not result_decoded else decoded(result)
+            result = result if not result_decoded else decoded(result)
+        return self._clean_output(result) if clean_output is None else clean_output(result)
 
     def __call__(self, *args, **kwargs):
         """Run Command."""
@@ -103,4 +106,4 @@ class Command:
         return subprocess.run(['man', self.full_name] + list(args), **kwargs)
 
 
-whoami = Command('whoami', default_decoded=True)
+whoami = Command('whoami', default_decoded=True, clean_output=lambda o: o.strip())

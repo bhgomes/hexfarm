@@ -38,6 +38,11 @@ from functools import partial
 # -------------- Hexfarm  Library -------------- #
 
 
+def identity(x):
+    """Identity Function."""
+    return x
+
+
 def flip(f):
     """Swap Arguments."""
     return lambda left, right: f(right, left)
