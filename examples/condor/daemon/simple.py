@@ -44,7 +44,7 @@ def main(argv):
     """Simple Daemon."""
     directory = Path('.temp/simple_daemon')
     directory.makedirs_p()
-    config = condor.JobConfig(path= directory / 'config.cfg')
+    config = condor.JobConfig(path=directory / 'config.cfg')
     executable = directory / 'job.py'
     executable.remove_p()
     executable.write_text(JOB_SOURCE)
