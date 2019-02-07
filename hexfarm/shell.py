@@ -43,6 +43,7 @@ from .util import identity, classproperty
 
 __all__ = ('decoded',
            'Command',
+           'me',
            'whoami')
 
 
