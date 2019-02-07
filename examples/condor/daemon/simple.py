@@ -31,9 +31,9 @@ from hexfarm import run_main
 
 @run_main()
 def main(argv):
-    for i in range({job_range}):
+    for x in range({job_range}):
         time.sleep({job_sleep})
-        print(i ** i)
+        print(x ** x)
     return 0
 
 '''.format(job_range=JOB_RANGE, job_sleep=JOB_SLEEP))
@@ -44,18 +44,19 @@ def main(argv):
     """Simple Daemon."""
     directory = Path('.temp/simple_daemon')
     directory.makedirs_p()
-    config = condor.JobConfig(path=directory / 'config.cfg')
-    executable = directory / 'job.py'
+    config = condor.JobConfig(path=Path('config.cfg'))
+    executable = Path('job.py')
     executable.remove_p()
     executable.write_text(JOB_SOURCE)
     condor.add_execute_permissions(executable)
 
     with config.write_mode as cfg:
         cfg.add_comments('Test File')
+        cfg.getenv = True
         cfg.initialdir = directory
-        cfg.log = directory / 'job.log'
-        cfg.error = directory / 'job.error'
-        cfg.out = directory / 'job.out'
+        cfg.log = 'job.log'
+        cfg.error = 'job.error'
+        cfg.out = 'job.out'
         cfg.executable = executable
         cfg.queue()
 
@@ -63,7 +64,6 @@ def main(argv):
     job_map.attach_config(config)
 
     while True:
-        print('HERE')
         jobs_running = len(job_map)
         if jobs_running < MAX_JOB_COUNT:
             for _ in range(MAX_JOB_COUNT - jobs_running):

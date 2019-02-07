@@ -457,7 +457,7 @@ class JobConfig(UserList):
         """Initialize Config."""
         self.__dict__['_write_mode'] = False
         super().__init__(*lines)
-        self.path = value_or(path, Path())
+        self.path = Path(value_or(path, '.'))
         self._saved = False
         self._log_file = None
 
