@@ -34,7 +34,6 @@ Core Utilities for the HTCondor Parallel Computing Framework.
 # -------------- Standard Library -------------- #
 
 import stat
-import subprocess
 from collections import UserList
 from collections.abc import Mapping
 from contextlib import contextmanager
@@ -50,12 +49,12 @@ from path import Path
 
 # -------------- Hexfarm  Library -------------- #
 
+from ..shell import decoded, Command
 from ..util import classproperty, value_or, partial
 
 
-__all__ = ('decoded',
-           'Command',
-           'COMMANDS',
+__all__ = ('CondorCommand',
+           'CONDOR_COMMANDS',
            'Universe',
            'Notification',
            'FileTransferMode',
@@ -67,14 +66,9 @@ __all__ = ('decoded',
            'PseudoDaemon')
 
 
-def decoded(output, mode='stdout', encoding='utf-8'):
-    """Decode Result of Command."""
-    return getattr(output, mode).decode(encoding)
-
-
-class Command:
+class CondorCommand(Command):
     """
-    Basic Command Object.
+    Condor Command Object.
 
     """
 
@@ -83,141 +77,109 @@ class Command:
         """Command Prefix."""
         return 'condor_'
 
-    def __init__(self, name, *args, **kwargs):
-        """Initialize Command."""
-        self.name = name
-        self.__args = list(args)
-        self.__kwargs = kwargs
 
-    @property
-    def full_name(self):
-        """Get Full Name of Command."""
-        return type(self).prefix + self.name
-
-    def run(self, *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, default_decoded=False, **kwargs):
-        """Run Command."""
-        result = subprocess.run([self.full_name] + self.__args + list(args),
-                                stdout=stdout,
-                                stderr=stderr,
-                                **self.__kwargs,
-                                **kwargs)
-        return result if not default_decoded else decoded(result)
-
-    def __call__(self, *args, **kwargs):
-        """Run Command."""
-        return self.run(*args, **kwargs)
-
-    def help(self, *args, **kwargs):
-        """Print Help Mode of Command."""
-        return self('--help', *args, **kwargs)
-
-    def man(self, *args, **kwargs):
-        """Print Man Pages of Command."""
-        return subprocess.run(['man', self.full_name] + list(args), **kwargs)
-
-
-COMMANDS = ('advertise',
-            'c-gahp',
-            'c-gahp_worker_thread',
-            'check_userlogs',
-            'checkpoint',
-            'ckpt_server',
-            'cod',
-            'collector',
-            'compile',
-            'config_val',
-            'configure',
-            'continue',
-            'credd',
-            'dagman',
-            'drain',
-            'fetchlog',
-            'findhost',
-            'ft-gahp',
-            'gather_info',
-            'gridmanager',
-            'gridshell',
-            'had',
-            'history',
-            'hold',
-            'init',
-            'install',
-            'kbdd',
-            'master',
-            'master_s',
-            'negotiator',
-            'off',
-            'on',
-            'ping',
-            'power',
-            'preen',
-            'prio',
-            'procd',
-            'q',
-            'qedit',
-            'qsub',
-            'reconfig',
-            'release',
-            'replication',
-            'reschedule',
-            'restart',
-            'rm',
-            'root_switchboard',
-            'router_history',
-            'router_q',
-            'router_rm',
-            'run',
-            'schedd',
-            'set_shutdown',
-            'shadow',
-            'shadow.std',
-            'shadow_s',
-            'ssh_to_job',
-            'startd',
-            'starter',
-            'starter.std',
-            'stats',
-            'status',
-            'store_cred',
-            'submit',
-            'submit_dag',
-            'suspend',
-            'tail',
-            'test_match',
-            'transfer_data',
-            'transferd',
-            'updates_stats',
-            'userlog',
-            'userlog_job_counter',
-            'userprio',
-            'vacate',
-            'vacate_job',
-            'version',
-            'vm-gahp',
-            'vm-gahp-vmware',
-            'vm_vmware',
-            'vm_vmware.pl',
-            'wait',
-            'who')
+CONDOR_COMMANDS = ('advertise',
+                   'c-gahp',
+                   'c-gahp_worker_thread',
+                   'check_userlogs',
+                   'checkpoint',
+                   'ckpt_server',
+                   'cod',
+                   'collector',
+                   'compile',
+                   'config_val',
+                   'configure',
+                   'continue',
+                   'credd',
+                   'dagman',
+                   'drain',
+                   'fetchlog',
+                   'findhost',
+                   'ft-gahp',
+                   'gather_info',
+                   'gridmanager',
+                   'gridshell',
+                   'had',
+                   'history',
+                   'hold',
+                   'init',
+                   'install',
+                   'kbdd',
+                   'master',
+                   'master_s',
+                   'negotiator',
+                   'off',
+                   'on',
+                   'ping',
+                   'power',
+                   'preen',
+                   'prio',
+                   'procd',
+                   'q',
+                   'qedit',
+                   'qsub',
+                   'reconfig',
+                   'release',
+                   'replication',
+                   'reschedule',
+                   'restart',
+                   'rm',
+                   'root_switchboard',
+                   'router_history',
+                   'router_q',
+                   'router_rm',
+                   'run',
+                   'schedd',
+                   'set_shutdown',
+                   'shadow',
+                   'shadow.std',
+                   'shadow_s',
+                   'ssh_to_job',
+                   'startd',
+                   'starter',
+                   'starter.std',
+                   'stats',
+                   'status',
+                   'store_cred',
+                   'submit',
+                   'submit_dag',
+                   'suspend',
+                   'tail',
+                   'test_match',
+                   'transfer_data',
+                   'transferd',
+                   'updates_stats',
+                   'userlog',
+                   'userlog_job_counter',
+                   'userprio',
+                   'vacate',
+                   'vacate_job',
+                   'version',
+                   'vm-gahp',
+                   'vm-gahp-vmware',
+                   'vm_vmware',
+                   'vm_vmware.pl',
+                   'wait',
+                   'who')
 
 
 def _make_commands(commands, command_dict):
     """Build Condor Commands for Globals."""
     name_list = []
     for name in commands:
-        setname = (Command.prefix + name).replace('.', '').replace('-', '_')
+        setname = (CondorCommand.prefix + name).replace('.', '').replace('-', '_')
         name_list.append(setname)
-        command_dict[setname] = Command(name)
+        command_dict[setname] = CondorCommand(name)
     return tuple(name_list)
 
 
-__all__ += _make_commands(COMMANDS, globals())
+__all__ += _make_commands(CONDOR_COMMANDS, globals())
 
 
 def current_jobs(*usernames):
     """List the Current Jobs by Users."""
     query = condor_q(' '.join(usernames)) if usernames else condor_q()
-    text = query.stdout.decode('utf-8').strip().split('\n')
+    text = decoded(query).strip().split('\n')
     user_dict = dict()
     for job_id, name, *_ in list(map(lambda l: l.strip().split(), text))[2:-2]:
         if name not in user_dict:
@@ -691,7 +653,10 @@ class Job:
         if self.log_file:
             return bool(condor_wait(self.log_file, *args).returncode)
         else:
-            return NotImplemented
+            for job_list in current_jobs().values():
+                if self.job_id in job_list:
+                    return False
+            return True
 
     @property
     def has_completed(self):
