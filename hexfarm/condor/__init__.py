@@ -42,10 +42,13 @@ from .core import *
 
 logger = logging.getLogger(__name__)
 
+HTCONDOR_INSTALLED = False
+
 try:
-    import htcondor as ht
+    import htcondor
+    HTCONDOR_INSTALLED = True
 except Exception:
     logger.info('HTCondor could not be imported.')
 
 
-__all__ = core.__all__
+__all__ = ('HTCONDOR_INSTALLED',) + core.__all__
