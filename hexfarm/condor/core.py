@@ -196,12 +196,15 @@ COMMANDS = ('advertise',
 
 def _make_commands(commands, command_dict):
     """Build Condor Commands for Globals."""
+    name_list = []
     for name in commands:
         setname = (Command.prefix + name).replace('.', '').replace('-', '_')
+        name_list.append(setname)
         command_dict[setname] = Command(name)
+    return tuple(name_list)
 
 
-_make_commands(COMMANDS, globals())
+__all__ += _make_commands(COMMANDS, globals())
 
 
 def current_jobs(*usernames):
