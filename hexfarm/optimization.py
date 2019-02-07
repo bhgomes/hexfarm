@@ -30,3 +30,9 @@
 Utilities for Optimization.
 
 """
+
+# -------------- External Library -------------- #
+
+import iminuit
+
+# -------------- Hexfarm  Library -------------- #

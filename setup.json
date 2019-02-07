@@ -36,6 +36,7 @@
         "formulate",
         "iminuit",
         "keras",
+        "tensorflow",
         "dataclasses",
         "paramiko",
         "keyring"
