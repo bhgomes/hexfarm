@@ -60,6 +60,7 @@ __all__ = ('CondorCommand',
            'FileTransferMode',
            'TransferOutputMode',
            'Job',
+           'job_dict',
            'JobCompletedException',
            'JobMap',
            'JobConfig',
@@ -677,6 +678,11 @@ class Job:
         return False
 
 
+def job_dict(*jobs):
+    """Make Job Dictionary."""
+    return {job.job_id: job for job in jobs}
+
+
 class JobCompletedException(KeyError):
     """Job Completed Exception."""
 
@@ -699,8 +705,7 @@ class JobMap(Mapping):
 
     def __init__(self, *jobs, remove_completed_jobs=False, source_config=None):
         """Initialize Job Mapping."""
-        self._jobs = {}
-        self.append(jobs)
+        self._jobs = job_dict(*jobs)
         self.remove_completed_jobs = remove_completed_jobs
         if source_config is not None:
             self.attach_config(source_config)
@@ -736,9 +741,13 @@ class JobMap(Mapping):
         for job_id in self:
             self.remove_job(job_id)
 
+    def extend(self, other):
+        """Extend Job Map."""
+        self._jobs.extend(other)
+
     def append(self, jobs):
-        """Append Jobs to """
-        self.extend({job.job_id: job for job in jobs})
+        """Append Jobs to JobMap."""
+        self.extend(job_dict(jobs))
 
     def remove_job(self, job_id, *args, **kwargs):
         """Remove Job."""
