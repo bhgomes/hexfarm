@@ -41,6 +41,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from inspect import cleandoc
 from itertools import starmap
+from typing import Sequence
 
 # -------------- External Library -------------- #
 
@@ -238,7 +239,7 @@ class Notification:
 
     email: str
     status: Status
-    attributes: List[str] = field(default_factory=list)
+    attributes: Sequence[str] = field(default_factory=list)
 
     def __str__(self):
         """Get String Representation of Notification."""
