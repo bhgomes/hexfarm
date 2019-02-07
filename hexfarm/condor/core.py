@@ -526,7 +526,7 @@ class JobConfig(UserList):
         if not lines:
             return None, None
         if len(lines) == 1:
-            key, value, *extra = tuple(map(lambda o: o.strip(), lines.split('=')))
+            key, value, *extra = tuple(map(lambda o: o.strip(), lines[0].split('=')))
             if extra:
                 raise ValueError('Bad Parse.')
             return key, value
