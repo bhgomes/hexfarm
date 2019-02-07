@@ -53,7 +53,8 @@ from path import Path
 from ..util import classproperty, value_or, partial
 
 
-__all__ = ('Command',
+__all__ = ('decoded',
+           'Command',
            'COMMANDS',
            'Universe',
            'Notification',
@@ -64,6 +65,11 @@ __all__ = ('Command',
            'JobConfig',
            'ConfigUnit',
            'PseudoDaemon')
+
+
+def decoded(output, mode='stdout', encoding='utf-8'):
+    """Decode Result of Command."""
+    return getattr(output, mode).decode(encoding)
 
 
 class Command:
@@ -88,13 +94,14 @@ class Command:
         """Get Full Name of Command."""
         return type(self).prefix + self.name
 
-    def run(self, *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs):
+    def run(self, *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, default_decoded=False, **kwargs):
         """Run Command."""
-        return subprocess.run([self.full_name] + self.__args + list(args),
-                              stdout=stdout,
-                              stderr=stderr,
-                              **self.__kwargs,
-                              **kwargs)
+        result = subprocess.run([self.full_name] + self.__args + list(args),
+                                stdout=stdout,
+                                stderr=stderr,
+                                **self.__kwargs,
+                                **kwargs)
+        return result if not default_decoded else decoded(result)
 
     def __call__(self, *args, **kwargs):
         """Run Command."""
