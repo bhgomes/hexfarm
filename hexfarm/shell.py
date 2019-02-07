@@ -57,9 +57,15 @@ class Command:
 
     """
 
+    def __init_subclass__(cls, prefix=None):
+        """Initialzie Command Subclasses."""
+        def prefix_fget(clas):
+            return prefix
+        cls.prefix = classproperty(fget=prefix_fget)
+
     @classproperty
     def prefix(cls):
-        """Command Prefix."""
+        """Default Command Prefix."""
         return ''
 
     def __init__(self, name, *args, default_decoded=False, clean_output=identity, **kwargs):
@@ -106,4 +112,4 @@ class Command:
         return subprocess.run(['man', self.full_name] + list(args), **kwargs)
 
 
-whoami = Command('whoami', default_decoded=True, clean_output=lambda o: o.strip())
+me = whoami = Command('whoami', default_decoded=True, clean_output=lambda o: o.strip())
