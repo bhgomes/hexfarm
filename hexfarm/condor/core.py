@@ -33,6 +33,7 @@ Core Utilities for the HTCondor Parallel Computing Framework.
 
 # -------------- Standard Library -------------- #
 
+import time
 import stat
 from collections import UserList
 from collections.abc import Mapping
@@ -804,6 +805,9 @@ class JobMap(Mapping):
         """Append to JobMap via Config Submit."""
         jobs = config.submit(*args, **kwargs)
         self.append(jobs)
+        print(jobs)
+        print(self._jobs)
+        time.sleep(1)
         return jobs
 
     def attach_config(self, config):

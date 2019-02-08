@@ -48,12 +48,12 @@ def submit_jobs(job_map, max_count):
     """Submit Jobs Unitl Maximum Count."""
     while True:
         count = len(job_map)
+        if count >= max_count:
+            break
         print('{count} jobs running.'.format(count=count))
         if count < max_count:
             print('Submitting Jobs ...')
             job_map.submit()
-        if count >= max_count:
-            break
 
 
 @run_main()
