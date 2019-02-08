@@ -578,7 +578,7 @@ class JobConfig(UserList):
 
     def queue(self, *args):
         """Add Queue to Config."""
-        arg_string = (' ' + map(str, args)) if args else ''
+        arg_string = (' ' + ' '.join(map(str, args))) if args else ''
         self.append('queue' + arg_string)
 
     @property

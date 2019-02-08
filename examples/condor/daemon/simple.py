@@ -63,7 +63,7 @@ def main(argv):
         cfg.error = 'job.error'
         cfg.output = 'job.out'
         cfg.executable = executable
-        cfg.queue()
+        cfg.queue(10)
 
     job_map = condor.JobMap(remove_completed_jobs=True, source_config=config)
 
