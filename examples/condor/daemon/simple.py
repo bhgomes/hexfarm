@@ -6,6 +6,10 @@ Basic Condor PseudoDaemon Implementation.
 
 """
 
+# -------------- Standard Library -------------- #
+
+import time
+
 # -------------- External Library -------------- #
 
 from path import Path
@@ -53,6 +57,7 @@ def main(argv):
     with config.write_mode as cfg:
         cfg.comments('Test File', 'Multiline Comment')
         cfg.getenv = True
+        cfg.stream_output = True
         cfg.initialdir = directory
         cfg.log = 'job.log'
         cfg.error = 'job.error'
