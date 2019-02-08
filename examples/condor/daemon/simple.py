@@ -56,21 +56,24 @@ def main(argv):
 
     with config.write_mode as cfg:
         cfg.comments('Test File', 'Multiline Comment')
-        cfg.getenv = True
-        cfg.stream_output = True
         cfg.initialdir = directory
         cfg.log = 'job.log'
         cfg.error = 'job.error'
-        cfg.output = 'job.out'
+        cfg.output = 'job_$(Cluster)_$(Process).out'
         cfg.executable = executable
-        cfg.queue(10)
+        cfg.getenv = True
+        cfg.stream_output = True
+        cfg.queue(2)
 
     job_map = condor.JobMap(remove_completed_jobs=True, source_config=config)
 
     while True:
-        jobs_running = len(job_map)
-        if jobs_running < MAX_JOB_COUNT:
-            for _ in range(MAX_JOB_COUNT - jobs_running):
+        count = len(job_map)
+        print('{count} jobs running.'.format(count=count))
+        if count < MAX_JOB_COUNT:
+            for _ in range(MAX_JOB_COUNT - count):
+                print('Submitting Job ...')
                 job_map.submit()
-        print(job_map)
+        print('Current Map:', job_map)
+        print('Sleeping...')
         time.sleep(DAEMON_TIMEOUT)

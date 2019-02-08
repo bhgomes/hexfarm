@@ -803,6 +803,14 @@ class JobMap(Mapping):
         self.source_config = config
         self.submit = partial(self.append_from_submit, self.source_config)
 
+    def __repr__(self):
+        """Representation of JobMap."""
+        return repr(self._jobs)
+
+    def __str__(self):
+        """String Conversion of JobMap."""
+        return str(self._jobs)
+
 
 def attach_ext(name, directory, extension):
     """Attach Extension to File."""
