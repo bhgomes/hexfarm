@@ -21,7 +21,7 @@ import hexfarm.condor as condor
 
 
 JOB_RANGE = 100
-JOB_SLEEP = 5
+JOB_SLEEP = 2
 MAX_JOB_COUNT = 20
 QUEUE_COUNT = 2
 DAEMON_SLEEP = 200
@@ -71,7 +71,7 @@ def main(argv):
         cfg.comments('Test File', 'Multiline Comment')
         cfg.initialdir = directory
         cfg.log = 'job.log'
-        cfg.error = 'job.error'
+        cfg.error = 'job_$(Cluster)_$(Process).error'
         cfg.output = 'job_$(Cluster)_$(Process).out'
         cfg.executable = executable
         cfg.getenv = True
