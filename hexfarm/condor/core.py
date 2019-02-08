@@ -630,7 +630,7 @@ class Job:
     @property
     def log_file(self):
         """Get Path of Log File for this Job."""
-        return self.log_file
+        return self._log_file
 
     @property
     def submitter(self):
