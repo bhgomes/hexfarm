@@ -558,7 +558,7 @@ class JobConfig(UserList):
         self.extend(other)
         return self
 
-    def add_comments(self, *comments):
+    def comments(self, *comments):
         """Add Comments to Config."""
         if not comments:
             return
@@ -566,7 +566,7 @@ class JobConfig(UserList):
             comments = comments[0].split('\n')
         self.extend(map(lambda c: '# ' + c, comments))
 
-    def add_email_notification(self, *notification):
+    def email_notification(self, *notification):
         """Add Email Notification to Config."""
         if len(notification) == 1 and isinstance(notification[0], Notification):
             notification = str(notification)
@@ -729,12 +729,22 @@ class JobMap(Mapping):
             raise JobCompletedException(job)
         return job
 
+    def clear_completed(self):
+        """Clear Jobs that have Completed."""
+        for key in list(self._jobs.keys()):
+            if self._jobs[key].has_completed:
+                del self._jobs[key]
+
     def __iter__(self):
         """Return Iterator over Jobs."""
+        if self.remove_completed_jobs:
+            self.clear_completed()
         return iter(self._jobs)
 
     def __len__(self):
         """Return Length of Job List."""
+        if self.remove_completed_jobs:
+            self.clear_completed()
         return len(self._jobs)
 
     def clear(self):

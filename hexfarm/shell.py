@@ -43,8 +43,9 @@ from .util import identity, classproperty
 
 __all__ = ('decoded',
            'Command',
-           'me',
+           'which',
            'whoami',
+           'me',
            'ME')
 
 
@@ -113,6 +114,8 @@ class Command:
         """Print Man Pages of Command."""
         return subprocess.run(['man', self.full_name] + list(args), **kwargs)
 
+
+which = Command('which', default_decoded=True, clean_output=lambda o: o.strip())
 
 me = whoami = Command('whoami', default_decoded=True, clean_output=lambda o: o.strip())
 

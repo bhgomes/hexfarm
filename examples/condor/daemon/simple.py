@@ -51,7 +51,7 @@ def main(argv):
     condor.add_execute_permissions(executable)
 
     with config.write_mode as cfg:
-        cfg.add_comments('Test File')
+        cfg.comments('Test File', 'Multiline Comment')
         cfg.getenv = True
         cfg.initialdir = directory
         cfg.log = 'job.log'
@@ -60,8 +60,7 @@ def main(argv):
         cfg.executable = executable
         cfg.queue()
 
-    job_map = condor.JobMap(remove_completed_jobs=True)
-    job_map.attach_config(config)
+    job_map = condor.JobMap(remove_completed_jobs=True, source_config=config)
 
     while True:
         jobs_running = len(job_map)
