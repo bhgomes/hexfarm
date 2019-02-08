@@ -33,7 +33,6 @@ Core Utilities for the HTCondor Parallel Computing Framework.
 
 # -------------- Standard Library -------------- #
 
-import time
 import stat
 from collections import UserList
 from collections.abc import Mapping
@@ -661,7 +660,7 @@ class Job:
 
     def check(self, wait_timeout=None):
         """Check if Job Has Completed."""
-        args = ['-wait', str(wait_timeout)] if wait_timeout else []
+        args = ('-wait', str(wait_timeout)) if wait_timeout else ()
         if self.log_file:
             return bool(condor_wait(self.log_file, *args).returncode)
         else:
@@ -670,9 +669,7 @@ class Job:
     @property
     def has_completed(self):
         """Check if Job Has Completed."""
-        if not hasattr(self, '_completed'):
-            self._completed = self.check(wait_timeout=1)
-        return self._completed
+        return self.check(wait_timeout=1)
 
     def on_completion(self, f, *args, wait_timeout=None, **kwargs):
         """Run On Completion of Job."""
@@ -743,7 +740,7 @@ class JobMap(Mapping):
     def pop_completed(self):
         """Clear Jobs that have Completed."""
         out = []
-        for job_id, job in list(self._jobs.items()):
+        for job_id, job in tuple(self._jobs.items()):
             if job.has_completed:
                 out.append(job)
                 del self._jobs[job_id]
@@ -810,9 +807,6 @@ class JobMap(Mapping):
         """Append to JobMap via Config Submit."""
         jobs = config.submit(*args, **kwargs)
         self.append(jobs)
-        print(jobs)
-        print(self._jobs)
-        time.sleep(1)
         return jobs
 
     def attach_config(self, config):

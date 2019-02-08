@@ -16,7 +16,7 @@ from path import Path
 
 # -------------- Hexfarm  Library -------------- #
 
-from hexfarm import run_main
+from hexfarm import ME, run_main
 import hexfarm.condor as condor
 
 
@@ -47,7 +47,8 @@ def main(argv):
 def submit_jobs(job_map, max_count):
     """Submit Jobs Unitl Maximum Count."""
     while True:
-        job_map.pop_completed()
+        print(condor.current_jobs(ME))
+        print(len(job_map.pop_completed()))
         count = len(job_map)
         if count >= max_count:
             break
