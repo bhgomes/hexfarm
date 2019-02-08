@@ -47,8 +47,7 @@ def main(argv):
 def submit_jobs(job_map, max_count):
     """Submit Jobs Unitl Maximum Count."""
     while True:
-        print(condor.current_jobs(ME))
-        print(len(job_map.pop_completed()))
+        job_map.pop_completed()
         count = len(job_map)
         if count >= max_count:
             break
