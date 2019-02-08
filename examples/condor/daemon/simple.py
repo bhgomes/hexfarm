@@ -22,7 +22,7 @@ import hexfarm.condor as condor
 
 JOB_RANGE = 80
 JOB_SLEEP = 0.5
-MAX_JOB_COUNT = 20
+MAX_JOB_COUNT = 5
 QUEUE_COUNT = 3
 DAEMON_SLEEP = 40
 

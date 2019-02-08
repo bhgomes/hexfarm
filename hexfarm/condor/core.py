@@ -662,11 +662,7 @@ class Job:
         """Check if Job Has Completed."""
         args = ('-wait', str(wait_timeout)) if wait_timeout else ()
         if self.log_file:
-            print(self.log_file)
-            print(str(self.log_file))
-            wait_command = condor_wait(self.log_file, *args)
-            print(wait_command)
-            return not bool(wait_command.returncode)
+            return not bool(condor_wait(self.log_file.abspath(), *args).returncode)
         else:
             return self.job_id not in current_jobs(self.submitter)[self.submitter]
 
@@ -916,7 +912,7 @@ class ConfigUnit:
         """Make Job Config."""
         configuration = JobConfig(path=self.configfile)
         configuration.add_pairs(**initial_vars)
-        map_absolute = (lambda p: p.absolute()) if absolute_paths else (lambda p: p)
+        map_absolute = (lambda p: p.abspath()) if absolute_paths else (lambda p: p)
         with configuration.write_mode as config:
             config.initialdir = map_absolute(self.directory)
             config.log = map_absolute(self.logfile)
