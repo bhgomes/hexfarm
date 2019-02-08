@@ -48,7 +48,6 @@ def main(argv):
 def submit_jobs(job_map, max_count):
     """Submit Jobs Until Maximum Count."""
     while True:
-        job_map.pop_completed()
         count = len(job_map)
         if count >= max_count:
             break
@@ -80,7 +79,7 @@ def main(argv):
         cfg.stream_output = True
         cfg.queue(QUEUE_COUNT)
 
-    job_map = condor.JobMap(source_config=config)
+    job_map = condor.JobMap(remove_completed_jobs=True, source_config=config)
 
     while True:
         print('Current Jobs:', len(job_map))
