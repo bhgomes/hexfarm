@@ -1,3 +1,3 @@
-import hexfarm as hf
+from hexfarm import *
 
-print(hf.np.random.uniform())
+print(hex.np.random.uniform())

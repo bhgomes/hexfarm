@@ -22,10 +22,11 @@ import hexfarm.condor as condor
 
 
 JOB_RANGE = 100
-JOB_SLEEP = 2
+JOB_SLEEP = 1
 MAX_JOB_COUNT = 20
 QUEUE_COUNT = 3
-DAEMON_SLEEP = 100
+DAEMON_SLEEP = 50
+
 
 JOB_SOURCE = condor.clean_source('''
 
