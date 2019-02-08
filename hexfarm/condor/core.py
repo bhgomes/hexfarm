@@ -500,7 +500,7 @@ class JobConfig(UserList):
         elif not self._saved:
             self.save()
         submit_output = decoded(condor_submit(self.path, *args, **kwargs))
-        return tuple(Job(job_id, self, log_file=self.log_file) for job_id in extract_job_ids(submit_output))
+        return tuple(Job(self, job_id, log_file=self.log_file) for job_id in extract_job_ids(submit_output))
 
     def __repr__(self):
         """Representation of Config File."""
@@ -680,8 +680,6 @@ class Job:
 
 def job_dict(*jobs):
     """Make Job Dictionary."""
-    print(jobs)
-    print(type(jobs))
     return {job.job_id: job for job in jobs}
 
 
@@ -690,7 +688,7 @@ class JobCompletedException(KeyError):
 
     def __init__(self, job):
         """Initialize Exception."""
-        super().__init__('Job {job_id} has already Completed.'.format(job_id=job.job_id))
+        super().__init__('Job {job_id} has already completed.'.format(job_id=job.job_id))
         self._job = job
 
     @property
