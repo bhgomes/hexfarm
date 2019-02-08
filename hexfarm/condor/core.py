@@ -56,6 +56,8 @@ from ..util import classproperty, value_or, partial
 
 __all__ = ('CondorCommand',
            'CONDOR_COMMANDS',
+           'current_jobs',
+           'my_jobs',
            'Universe',
            'Notification',
            'FileTransferMode',
@@ -738,22 +740,25 @@ class JobMap(Mapping):
             raise JobCompletedException(job)
         return job
 
-    def clear_completed(self):
+    def pop_completed(self):
         """Clear Jobs that have Completed."""
-        for key in list(self._jobs.keys()):
-            if self._jobs[key].has_completed:
-                del self._jobs[key]
+        out = []
+        for job_id, job in list(self._jobs.items()):
+            if job.has_completed:
+                out.append(job)
+                del self._jobs[job_id]
+        return tuple(out)
 
     def __iter__(self):
         """Return Iterator over Jobs."""
         if self.remove_completed_jobs:
-            self.clear_completed()
+            self.pop_completed()
         return iter(self._jobs)
 
     def __len__(self):
         """Return Length of Job List."""
         if self.remove_completed_jobs:
-            self.clear_completed()
+            self.pop_completed()
         return len(self._jobs)
 
     def clear(self):
