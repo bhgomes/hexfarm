@@ -541,7 +541,7 @@ class JobConfig(UserList):
         """Append to Config."""
         key, internal_value = self._open_pair(value)
         if key == 'log':
-            self._log_file = internal_value
+            self._log_file = Path(internal_value)
         super().append(str(value))
 
     def extend(self, other):
