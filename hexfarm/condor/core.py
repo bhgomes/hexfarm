@@ -680,6 +680,8 @@ class Job:
 
 def job_dict(*jobs):
     """Make Job Dictionary."""
+    print(jobs)
+    print(type(jobs))
     return {job.job_id: job for job in jobs}
 
 
@@ -970,7 +972,7 @@ class PseudoDaemon(ConfigUnit):
     @classproperty
     def source_footer(cls):
         """Default Footer."""
-        return cls.source_main_wrapper + '\n'
+        return cls.source_main_wrapper + '\n\n'
 
     @classproperty
     def default_source(cls):
