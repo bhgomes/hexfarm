@@ -22,8 +22,9 @@ import hexfarm.condor as condor
 
 JOB_RANGE = 100
 JOB_SLEEP = 5
-MAX_JOB_COUNT = 10
-DAEMON_TIMEOUT = 200
+MAX_JOB_COUNT = 20
+QUEUE_COUNT = 2
+DAEMON_SLEEP = 200
 
 JOB_SOURCE = condor.clean_source('''
 
@@ -41,6 +42,18 @@ def main(argv):
     return 0
 
 '''.format(job_range=JOB_RANGE, job_sleep=JOB_SLEEP))
+
+
+def submit_jobs(job_map, max_count):
+    """Submit Jobs Unitl Maximum Count."""
+    while True:
+        count = len(job_map)
+        print('{count} jobs running.'.format(count=count))
+        if count < max_count:
+            print('Submitting Jobs ...')
+            job_map.submit()
+        if count >= max_count:
+            break
 
 
 @run_main()
@@ -63,17 +76,12 @@ def main(argv):
         cfg.executable = executable
         cfg.getenv = True
         cfg.stream_output = True
-        cfg.queue(2)
+        cfg.queue(QUEUE_COUNT)
 
     job_map = condor.JobMap(remove_completed_jobs=True, source_config=config)
 
     while True:
-        count = len(job_map)
-        print('{count} jobs running.'.format(count=count))
-        if count < MAX_JOB_COUNT:
-            for _ in range(MAX_JOB_COUNT - count):
-                print('Submitting Job ...')
-                job_map.submit()
         print('Current Map:', job_map)
-        print('Sleeping...')
-        time.sleep(DAEMON_TIMEOUT)
+        submit_jobs(job_map, MAX_JOB_COUNT)
+        print('Sleeping for {sleep} seconds ...'.format(sleep=DAEMON_SLEEP))
+        time.sleep(DAEMON_SLEEP)
