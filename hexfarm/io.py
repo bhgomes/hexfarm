@@ -34,10 +34,54 @@ Utilities for IO.
 # -------------- Standard Library -------------- #
 
 import os
-import sys
 
 # -------------- External Library -------------- #
 
-import path
+from path import Path
 
 # -------------- Hexfarm  Library -------------- #
+
+from .util import identity
+
+
+def has_extension(ext, path):
+    """Check if Path Has Given Extension."""
+    return Path(path).ext == ext
+
+
+def walk_paths(
+    directory,
+    dir_predicate=identity,
+    file_predicate=identity,
+    *,
+    topdown=True,
+    onerror=None,
+    followlinks=False,
+    **kwargs
+    ):
+    """Walk Paths Filtering Directories and Files."""
+    for root, dirs, files in os.walk(directory,
+                                     topdown=topdown,
+                                     onerror=onerror,
+                                     followlinks=followlinks):
+        yield root, filter(dir_predicate, dirs), filter(file_predicate, files)
+
+
+def fwalk_paths(
+    directory,
+    dir_predicate=identity,
+    file_predicate=identity,
+    *,
+    topdown=True,
+    onerror=None,
+    follow_symlinks=False,
+    dir_fd=None,
+    **kwargs
+    ):
+    """Walk Paths Filtering Directories and Files."""
+    for root, dirs, files, rootfd in os.fwalk(directory,
+                                              topdown=topdown,
+                                              onerror=onerror,
+                                              followlinks=followlinks,
+                                              dir_fd=dir_fd):
+        yield root, filter(dir_predicate, dirs), filter(file_predicate, files), rootfd

@@ -33,9 +33,20 @@ ROOT Utilities.
 
 # -------------- External Library -------------- #
 
+from path import Path
+
 import uproot
 import uproot_methods
 import rootpy
 import histbook
 
 # -------------- Hexfarm  Library -------------- #
+
+from .io import has_extension, walk_paths
+
+
+def traverse_root_files(directory):
+    """Collect ROOT Files."""
+    for root, _, files in walk_paths(directory, file_predicate=partial(has_extension, 'root')):
+        root_path = Path(root)
+        yield from (root_path / name for name in files)
