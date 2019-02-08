@@ -9,7 +9,6 @@ Basic Condor PseudoDaemon Implementation.
 # -------------- Standard Library -------------- #
 
 import time
-from pprint import pprint
 
 # -------------- External Library -------------- #
 
@@ -21,11 +20,11 @@ from hexfarm import ME, run_main
 import hexfarm.condor as condor
 
 
-JOB_RANGE = 100
-JOB_SLEEP = 1
+JOB_RANGE = 80
+JOB_SLEEP = 0.5
 MAX_JOB_COUNT = 20
 QUEUE_COUNT = 3
-DAEMON_SLEEP = 50
+DAEMON_SLEEP = 40
 
 
 JOB_SOURCE = condor.clean_source('''
@@ -84,8 +83,7 @@ def main(argv):
     job_map = condor.JobMap(source_config=config)
 
     while True:
-        print('Current Map:')
-        pprint(job_map)
+        print('Current Jobs:', len(job_map))
         submit_jobs(job_map, MAX_JOB_COUNT)
         print('Sleeping for {sleep} seconds ...'.format(sleep=DAEMON_SLEEP))
         time.sleep(DAEMON_SLEEP)

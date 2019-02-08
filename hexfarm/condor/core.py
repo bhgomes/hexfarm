@@ -741,6 +741,7 @@ class JobMap(Mapping):
         """Clear Jobs that have Completed."""
         out = []
         for job_id, job in tuple(self._jobs.items()):
+            print(job_id, job.has_completed)
             if job.has_completed:
                 out.append(job)
                 del self._jobs[job_id]
