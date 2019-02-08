@@ -56,7 +56,7 @@ def main(argv):
         cfg.initialdir = directory
         cfg.log = 'job.log'
         cfg.error = 'job.error'
-        cfg.out = 'job.out'
+        cfg.output = 'job.out'
         cfg.executable = executable
         cfg.queue()
 
