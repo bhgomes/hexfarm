@@ -46,7 +46,7 @@ def main(argv):
 
 
 def submit_jobs(job_map, max_count):
-    """Submit Jobs Unitl Maximum Count."""
+    """Submit Jobs Until Maximum Count."""
     while True:
         job_map.pop_completed()
         count = len(job_map)
@@ -72,7 +72,7 @@ def main(argv):
     with config.write_mode as cfg:
         cfg.comments('Simple HEXFARM Pseudo Daemon', 'bhgomes')
         cfg.initialdir = directory
-        cfg.log = 'job.log'
+        cfg.log = (directory / 'job.log').abspath()
         cfg.error = 'job_$(Cluster)_$(Process).error'
         cfg.output = 'job_$(Cluster)_$(Process).out'
         cfg.executable = executable

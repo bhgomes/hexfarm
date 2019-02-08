@@ -662,9 +662,7 @@ class Job:
         """Check if Job Has Completed."""
         args = ('-wait', str(wait_timeout)) if wait_timeout else ()
         if self.log_file:
-            cmd = condor_wait(self.log_file.abspath(), *args)
-            print(cmd)
-            return not bool(cmd.returncode)
+            return not bool(condor_wait(self.log_file.abspath(), *args).returncode)
         else:
             return self.job_id not in current_jobs(self.submitter)[self.submitter]
 
