@@ -677,6 +677,14 @@ class Job:
             return f(self, *args, **kwargs)
         return False
 
+    def __repr__(self):
+        """Representation of Job."""
+        return str(self)
+
+    def __str__(self):
+        """String conversion of Job."""
+        return 'Job({job_id})'.format(job_id=self.job_id)
+
 
 def job_dict(*jobs):
     """Make Job Dictionary."""
