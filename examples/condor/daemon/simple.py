@@ -9,6 +9,7 @@ Basic Condor PseudoDaemon Implementation.
 # -------------- Standard Library -------------- #
 
 import time
+from pprint import pprint
 
 # -------------- External Library -------------- #
 
@@ -23,8 +24,8 @@ import hexfarm.condor as condor
 JOB_RANGE = 100
 JOB_SLEEP = 2
 MAX_JOB_COUNT = 20
-QUEUE_COUNT = 2
-DAEMON_SLEEP = 200
+QUEUE_COUNT = 3
+DAEMON_SLEEP = 100
 
 JOB_SOURCE = condor.clean_source('''
 
@@ -69,7 +70,7 @@ def main(argv):
     condor.add_execute_permissions(executable)
 
     with config.write_mode as cfg:
-        cfg.comments('Test File', 'Multiline Comment')
+        cfg.comments('Simple HEXFARM Pseudo Daemon', 'bhgomes')
         cfg.initialdir = directory
         cfg.log = 'job.log'
         cfg.error = 'job_$(Cluster)_$(Process).error'
@@ -82,7 +83,8 @@ def main(argv):
     job_map = condor.JobMap(source_config=config)
 
     while True:
-        print('Current Map:', job_map)
+        print('Current Map:')
+        pprint(job_map)
         submit_jobs(job_map, MAX_JOB_COUNT)
         print('Sleeping for {sleep} seconds ...'.format(sleep=DAEMON_SLEEP))
         time.sleep(DAEMON_SLEEP)
