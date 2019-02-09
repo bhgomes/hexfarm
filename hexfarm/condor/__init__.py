@@ -50,6 +50,3 @@ try:
     HTCONDOR_INSTALLED = True
 except Exception:
     logger.info('HTCondor could not be imported.')
-
-
-__all__ = core.__all__ + ('HTCONDOR_INSTALLED', 'PseudoDaemon')

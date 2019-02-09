@@ -33,6 +33,7 @@ Daemon Utilities for the HTCondor Parallel Computing Framework.
 
 # -------------- Standard Library -------------- #
 
+import stat
 from dataclasses import dataclass
 from inspect import cleandoc as clean_source
 
@@ -43,6 +44,7 @@ from path import Path
 
 # -------------- Hexfarm  Library -------------- #
 
+from ..util import classproperty, value_or
 from .core import *
 
 
@@ -167,5 +169,5 @@ class PseudoDaemon:
         return hasattr(self, source)
 
     def start(self, *args, **kwargs):
-        """Start PseudoDaemon."""=
+        """Start PseudoDaemon."""
         return NotImplemented

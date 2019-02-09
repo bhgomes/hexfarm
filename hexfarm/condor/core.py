@@ -33,7 +33,6 @@ Core Utilities for the HTCondor Parallel Computing Framework.
 
 # -------------- Standard Library -------------- #
 
-import stat
 import tempfile
 from collections import UserList
 from collections.abc import Mapping
@@ -231,9 +230,9 @@ class Notification:
     def __str__(self):
         """Get String Representation of Notification."""
         attributes = f'email_attributes={",".join(self.attributes)}'
-        return f'notification={self.status}\n'
-               f'notify-user={self.email}\n'
-               f'{attributes if self.attributes else ""}'
+        return '\n'.join((f'notification={self.status}',
+                          f'notify-user={self.email}',
+                          f'{attributes if self.attributes else ""}'))
 
 
 class FileTransferMode(NameEnum):
@@ -335,7 +334,7 @@ class WriteModeMixin:
             super().__setattr__(name, value)
 
 
-CONDOR_SUBMIT_COMMANDS = set(
+CONDOR_SUBMIT_COMMANDS = {
     'accounting_group',
     'accounting_group_user',
     'allow_startup_script',
@@ -521,7 +520,7 @@ CONDOR_SUBMIT_COMMANDS = set(
     'xen_kernel',
     'xen_kernel_params',
     'xen_root'
-)
+}
 
 
 class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMMANDS):
@@ -893,7 +892,7 @@ class JobMap(Mapping):
         return str(self._jobs)
 
 
-class ConfigUnitBase(WriteModeMixin):
+class ConfigUnitBase(WriteModeMixin, write_mode_keywords=set()):
     """Configuration Unit Base Structure."""
 
     def __init_subclass__(cls, class_ad_name, class_ad_id_name, fixed_keys, make_prefix_config=True, **kwargs):
@@ -905,7 +904,7 @@ class ConfigUnitBase(WriteModeMixin):
                 classproperty(lambda c: f'$({class_ad_id_name})'))
         for name in fixed_keys:
             fget = lambda s, n=name: kv_string(n, getattr(s, n)) if getattr(s, n) else ''
-            setattr(cls, f'{underscore(name)}_kv_str', property(fget)
+            setattr(cls, f'{underscore(name)}_kv_str', property(fget))
         if make_prefix_config:
             def _prefix_config(s):
                 return JobConfig(getattr(s, f'{underscore(name)}_kv_str') for name in fixed_keys)
@@ -980,7 +979,8 @@ class ProcessUnit(ConfigUnitBase,
 class ClusterUnit(ConfigUnitBase,
                   class_ad_name='Cluster',
                   class_ad_id_name='ClusterId',
-                  fixed_keys=('executable', 'log')):
+                  fixed_keys=('executable', 'log'),
+                  write_mode_keywords=CONDOR_SUBMIT_COMMANDS):
     """
     Cluster Configuration Unit.
 
