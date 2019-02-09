@@ -1,0 +1,38 @@
+package:
+  name: {name}
+  version: {version}
+
+
+source:
+  url: https://github.com/bhgomes/{name}/releases/download/v{version}/{name}-{version}.tar.gz
+  sha256:
+
+
+build:
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+
+
+requirements:
+  host:
+    - python
+    - pip
+
+
+test:
+  imports:
+    - {name}
+
+
+about:
+  home: http://github.com/bhgomes/{name}
+  license: MIT
+  license_file: LICENSE.md
+  summary: 'Hexfarm.'
+  doc_url: https://github.com/bhgomes/{name}
+  dev_url: https://github.com/bhgomes/{name}
+
+
+extra:
+  recipe-maintainers:
+    - bhgomes
