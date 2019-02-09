@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/__init__.py
+# hexfarm/cli.py
 #
 #
 # MIT License
@@ -27,26 +27,31 @@
 #
 
 """
-HexFarm Utility Library.
+Utilities for CLI Programs.
 
 """
 
 # -------------- Standard Library -------------- #
 
 import sys
-import time
-
-# -------------- External Library -------------- #
-
-import numpy as np
-import scipy as sci
-import sympy as sym
+from functools import wraps
 
 # -------------- Hexfarm  Library -------------- #
 
-from .condor import HTCONDOR_INSTALLED
-from .cli import run_main
-from .shell import ME
-from .util import *
 
-from ._version import __version_info__, __version__
+__all__ = (
+    'run_main'
+)
+
+
+def run_main(argv=sys.argv, exit=sys.exit, auto_run=True, ignore_arg_zero=False):
+    """Run Main Function with Given Arguments and Exit Process."""
+    def internal(main):
+        @wraps(main)
+        def wrapper():
+            return exit(main(argv[1:] if ignore_arg_zero else argv))
+        # TODO: check the __name__ == '__main__' condition
+        if auto_run and __name__ == '__main__':
+            wrapper()
+        return wrapper
+    return internal

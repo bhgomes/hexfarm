@@ -33,10 +33,11 @@ Hexfarm CLI.
 
 # -------------- Standard Library -------------- #
 
+# -------------- External Library -------------- #
 
 # -------------- Hexfarm  Library -------------- #
 
-from .util import run_main
+from .cli import run_main
 
 
 @run_main()

@@ -41,12 +41,14 @@ import subprocess
 from .util import identity, classproperty
 
 
-__all__ = ('decoded',
-           'Command',
-           'which',
-           'whoami',
-           'me',
-           'ME')
+__all__ = (
+    'decoded',
+    'Command',
+    'which',
+    'whoami',
+    'me',
+    'ME'
+)
 
 
 def decoded(output, mode='stdout', encoding='utf-8'):

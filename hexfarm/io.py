@@ -44,20 +44,28 @@ from path import Path
 from .util import identity
 
 
+__all__ = (
+    'has_extension',
+    'walk_paths',
+    'fwalk_paths',
+    'format_file'
+)
+
+
 def has_extension(ext, path):
     """Check if Path Has Given Extension."""
     return Path(path).ext == ext
 
 
 def walk_paths(
-    directory,
-    dir_predicate=identity,
-    file_predicate=identity,
-    *,
-    topdown=True,
-    onerror=None,
-    followlinks=False,
-    **kwargs
+        directory,
+        dir_predicate=identity,
+        file_predicate=identity,
+        *,
+        topdown=True,
+        onerror=None,
+        followlinks=False,
+        **kwargs
     ):
     """Walk Paths Filtering Directories and Files."""
     for root, dirs, files in os.walk(directory,
@@ -68,15 +76,15 @@ def walk_paths(
 
 
 def fwalk_paths(
-    directory,
-    dir_predicate=identity,
-    file_predicate=identity,
-    *,
-    topdown=True,
-    onerror=None,
-    follow_symlinks=False,
-    dir_fd=None,
-    **kwargs
+        directory,
+        dir_predicate=identity,
+        file_predicate=identity,
+        *,
+        topdown=True,
+        onerror=None,
+        follow_symlinks=False,
+        dir_fd=None,
+        **kwargs
     ):
     """Walk Paths Filtering Directories and Files."""
     for root, dirs, files, rootfd in os.fwalk(directory,
@@ -85,3 +93,14 @@ def fwalk_paths(
                                               followlinks=followlinks,
                                               dir_fd=dir_fd):
         yield root, filter(dir_predicate, dirs), filter(file_predicate, files), rootfd
+
+
+def format_file(source, target, **kwargs):
+    """Format Input File."""
+    with open(target, 'w') as target_file:
+        with open(source, 'r') as source_file:
+            for line in source_file:
+                try:
+                    target_file.write(line.format(**kwargs))
+                except KeyError:
+                    target_file.write(line)

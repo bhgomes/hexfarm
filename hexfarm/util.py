@@ -33,20 +33,21 @@ Hexfarm Utilities.
 
 # -------------- Standard Library -------------- #
 
-import sys
-from functools import partial, wraps
+from functools import partial
 
 # -------------- Hexfarm  Library -------------- #
 
 
-__all__ = ('identity',
-           'flip',
-           'value_or',
-           'instance_of',
-           'subclass_of',
-           'subdict',
-           'classproperty',
-           'run_main')
+__all__ = (
+    'identity',
+    'flip',
+    'map_value_or',
+    'value_or',
+    'instance_of',
+    'subclass_of',
+    'subdict',
+    'classproperty',
+)
 
 
 def identity(x):
@@ -59,9 +60,14 @@ def flip(f):
     return lambda left, right: f(right, left)
 
 
+def map_value_or(f, value, default):
+    """Return Value or Default if Value is None."""
+    return f(value) if value is not None else default
+
+
 def value_or(value, default):
     """Return Value or Default if Value is None."""
-    return value if value is not None else default
+    return map_value_or(identity, value, default)
 
 
 def instance_of(types):
@@ -99,15 +105,3 @@ class classproperty(property):
     def __delete__(self, obj):
         """Wrap Deleter Function."""
         super().__delete__(type(obj))
-
-
-def run_main(argv=sys.argv, exit=sys.exit, auto_run=True):
-    """Run Main Function with Given Arguments and Exit Process."""
-    def internal(main):
-        @wraps(main)
-        def wrapper():
-            return exit(main(argv))
-        if auto_run:
-            wrapper()
-        return wrapper
-    return internal
