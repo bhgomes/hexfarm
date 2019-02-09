@@ -1,6 +1,5 @@
 #!/bin/sh
 # Hexfarm Setup Script
-# (bhgomes)
 
 cd $HOME
 

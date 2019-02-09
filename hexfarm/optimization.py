@@ -34,5 +34,6 @@ Utilities for Optimization.
 # -------------- External Library -------------- #
 
 import iminuit
+import scipy.optimize
 
 # -------------- Hexfarm  Library -------------- #

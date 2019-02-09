@@ -45,8 +45,20 @@ import histbook
 from .io import has_extension, walk_paths
 
 
+__all__ = (
+    'traverse_root_files',
+    'chain'
+)
+
+
 def traverse_root_files(directory):
     """Collect ROOT Files."""
     for root, _, files in walk_paths(directory, file_predicate=partial(has_extension, 'root')):
         root_path = Path(root)
         yield from (root_path / name for name in files)
+
+
+def chain(directory):
+    """"""
+    #TODO:
+    return NotImplemented

@@ -34,11 +34,12 @@ Daemon Utilities for the HTCondor Parallel Computing Framework.
 # -------------- Standard Library -------------- #
 
 from dataclasses import dataclass
-from path import Path
+from inspect import cleandoc as clean_source
 
 # -------------- External Library -------------- #
 
 from paramiko import SSHClient, AutoAddPolicy
+from path import Path
 
 # -------------- Hexfarm  Library -------------- #
 
@@ -93,3 +94,78 @@ def put_data(connection, *, remove_source=False):
                 localpath.remove_p()
         return attributes
     return inner_put
+
+
+def add_execute_permissions(path, mode=stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+    """Add Execute Permissions to a Path."""
+    path.chmod(path.stat().st_mode | mode)
+
+
+def build_executable(directory, executable_path, source_code, *, rewrite=True):
+    """Generate Source Code File."""
+    if not directory.exists():
+        directory.mkdir(parents=True, exist_ok=True)
+    if rewrite and executable_path.exists():
+        executable_path.unlink()
+    executable_path.touch(exist_ok=True)
+    executable_path.write_text(source_code)
+    add_execute_permissions(executable_path)
+    return executable_path
+
+
+class PseudoDaemon:
+    """
+    Condor PseudoDaemon.
+
+    """
+
+    @classproperty
+    def source_header(cls):
+        """Default Source Header."""
+        return clean_source('''
+            #!/usr/bin/env python3
+            # -*- coding: utf-8 -*-
+
+            import sys
+            import time
+            import logging
+
+            logger = logging.getLogger(__name__)
+            ''')
+
+    @classproperty
+    def source_hexfarm_import(cls):
+        """Default Hexfarm Import."""
+        return 'from hexfarm import run_main'
+
+    @classproperty
+    def source_footer(cls):
+        """Default Footer."""
+        return '\n\n'
+
+    @classproperty
+    def default_source(cls):
+        """Default Source Code."""
+        return '\n\n'.join((cls.source_header,
+                            cls.source_hexfarm_import,
+                            clean_source('''
+                                @run_main()
+                                def main(argv):
+                                    argv = argv[1:]
+                                    print(argv, len(argv), 'args')
+                                    return 0
+                                '''),
+                            cls.source_footer))
+
+    def __init__(self, name):
+        """Initialize PseudoDaemon."""
+        return NotImplemented
+
+    @property
+    def is_built_from_source(self):
+        """Check if Daemon is Built From Source Code."""
+        return hasattr(self, source)
+
+    def start(self, *args, **kwargs):
+        """Start PseudoDaemon."""=
+        return NotImplemented

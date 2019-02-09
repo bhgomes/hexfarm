@@ -34,134 +34,146 @@ Core Utilities for the HTCondor Parallel Computing Framework.
 # -------------- Standard Library -------------- #
 
 import stat
+import tempfile
 from collections import UserList
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from inspect import cleandoc as clean_source
+from functools import partial
 from itertools import starmap
 from typing import Sequence
 
 # -------------- External Library -------------- #
 
+from inflection import underscore
 from aenum import Enum, AutoValue
 from path import Path
 
 # -------------- Hexfarm  Library -------------- #
 
 from ..shell import decoded, Command, me
-from ..util import classproperty, value_or, partial
+from ..util import classproperty, map_value_or, value_or
 
 
-__all__ = ('CondorCommand',
-           'CONDOR_COMMANDS',
-           'current_jobs',
-           'my_jobs',
-           'Universe',
-           'Notification',
-           'FileTransferMode',
-           'TransferOutputMode',
-           'Job',
-           'job_dict',
-           'JobCompletedException',
-           'JobMap',
-           'JobConfig',
-           'ConfigUnit',
-           'clean_source',
-           'add_execute_permissions',
-           'PseudoDaemon')
+__all__ = (
+    'CondorCommand',
+    'CONDOR_COMMANDS',
+    'current_jobs',
+    'user_jobs',
+    'Universe',
+    'Notification',
+    'FileTransferMode',
+    'TransferOutputMode',
+    'This',
+    'condor_format_mapping',
+    'condor_format_sequence',
+    'extract_job_ids',
+    'CONDOR_SUBMIT_COMMANDS',
+    'JobConfig',
+    'submit_config',
+    'Job',
+    'job_dict',
+    'JobCompletedException',
+    'JobMap',
+    'ConfigUnitBase',
+    'ProcessUnit',
+    'ClusterUnit',
+    'MultiClusterUnit'
+)
 
 
 class CondorCommand(Command, prefix='condor_'):
     """Condor Command Object."""
 
 
-CONDOR_COMMANDS = ('advertise',
-                   'c-gahp',
-                   'c-gahp_worker_thread',
-                   'check_userlogs',
-                   'checkpoint',
-                   'ckpt_server',
-                   'cod',
-                   'collector',
-                   'compile',
-                   'config_val',
-                   'configure',
-                   'continue',
-                   'credd',
-                   'dagman',
-                   'drain',
-                   'fetchlog',
-                   'findhost',
-                   'ft-gahp',
-                   'gather_info',
-                   'gridmanager',
-                   'gridshell',
-                   'had',
-                   'history',
-                   'hold',
-                   'init',
-                   'install',
-                   'kbdd',
-                   'master',
-                   'master_s',
-                   'negotiator',
-                   'off',
-                   'on',
-                   'ping',
-                   'power',
-                   'preen',
-                   'prio',
-                   'procd',
-                   'q',
-                   'qedit',
-                   'qsub',
-                   'reconfig',
-                   'release',
-                   'replication',
-                   'reschedule',
-                   'restart',
-                   'rm',
-                   'root_switchboard',
-                   'router_history',
-                   'router_q',
-                   'router_rm',
-                   'run',
-                   'schedd',
-                   'set_shutdown',
-                   'shadow',
-                   'shadow.std',
-                   'shadow_s',
-                   'ssh_to_job',
-                   'startd',
-                   'starter',
-                   'starter.std',
-                   'stats',
-                   'status',
-                   'store_cred',
-                   'submit',
-                   'submit_dag',
-                   'suspend',
-                   'tail',
-                   'test_match',
-                   'transfer_data',
-                   'transferd',
-                   'updates_stats',
-                   'userlog',
-                   'userlog_job_counter',
-                   'userprio',
-                   'vacate',
-                   'vacate_job',
-                   'version',
-                   'vm-gahp',
-                   'vm-gahp-vmware',
-                   'vm_vmware',
-                   'vm_vmware.pl',
-                   'wait',
-                   'who')
+CONDOR_COMMANDS = (
+    'advertise',
+    'c-gahp',
+    'c-gahp_worker_thread',
+    'check_userlogs',
+    'checkpoint',
+    'ckpt_server',
+    'cod',
+    'collector',
+    'compile',
+    'config_val',
+    'configure',
+    'continue',
+    'credd',
+    'dagman',
+    'drain',
+    'fetchlog',
+    'findhost',
+    'ft-gahp',
+    'gather_info',
+    'gridmanager',
+    'gridshell',
+    'had',
+    'history',
+    'hold',
+    'init',
+    'install',
+    'kbdd',
+    'master',
+    'master_s',
+    'negotiator',
+    'off',
+    'on',
+    'ping',
+    'power',
+    'preen',
+    'prio',
+    'procd',
+    'q',
+    'qedit',
+    'qsub',
+    'reconfig',
+    'release',
+    'replication',
+    'reschedule',
+    'restart',
+    'rm',
+    'root_switchboard',
+    'router_history',
+    'router_q',
+    'router_rm',
+    'run',
+    'schedd',
+    'set_shutdown',
+    'shadow',
+    'shadow.std',
+    'shadow_s',
+    'ssh_to_job',
+    'startd',
+    'starter',
+    'starter.std',
+    'stats',
+    'status',
+    'store_cred',
+    'submit',
+    'submit_dag',
+    'suspend',
+    'tail',
+    'test_match',
+    'transfer_data',
+    'transferd',
+    'updates_stats',
+    'userlog',
+    'userlog_job_counter',
+    'userprio',
+    'vacate',
+    'vacate_job',
+    'version',
+    'vm-gahp',
+    'vm-gahp-vmware',
+    'vm_vmware',
+    'vm_vmware.pl',
+    'wait',
+    'who'
+)
 
 
-def _make_commands(commands, command_dict):
+def add_condor_commands(commands, command_dict):
     """Build Condor Commands for Globals."""
     name_list = []
     for name in commands:
@@ -171,7 +183,7 @@ def _make_commands(commands, command_dict):
     return tuple(name_list)
 
 
-__all__ += _make_commands(CONDOR_COMMANDS, globals())
+__all__ += add_condor_commands(CONDOR_COMMANDS, globals())
 
 
 def current_jobs(*usernames):
@@ -186,13 +198,12 @@ def current_jobs(*usernames):
     return user_dict
 
 
-def my_jobs():
-    """Get My Jobs."""
-    username = me()
+def user_jobs(username=me()):
+    """Get User's Jobs."""
     return current_jobs(username)[username]
 
 
-class _NameEnum(Enum, settings=AutoValue):
+class NameEnum(Enum, settings=AutoValue):
     """Named Enum Objects."""
 
     def __str__(self):
@@ -200,7 +211,7 @@ class _NameEnum(Enum, settings=AutoValue):
         return self.name
 
 
-class Universe(_NameEnum):
+class Universe(NameEnum):
     """Condor Universe Enum."""
     Vanilla, Standard, Scheduler, Local, Grid, Java, VM, Parallel, Docker
 
@@ -209,7 +220,7 @@ class Universe(_NameEnum):
 class Notification:
     """Notification Structure."""
 
-    class Status(_NameEnum):
+    class Status(NameEnum):
         """Notification Status."""
         Always, Complete, Error, Never
 
@@ -219,28 +230,61 @@ class Notification:
 
     def __str__(self):
         """Get String Representation of Notification."""
-        status_and_user = '\n'.join(('notification=' + self.status, 'notify-user=' + self.email))
-        attributes = ('\nemail_attributes=' if self.attributes else '') + ','.join(self.attributes)
-        return status_and_user + attributes
+        attributes = f'email_attributes={",".join(self.attributes)}'
+        return f'notification={self.status}\n'
+               f'notify-user={self.email}\n'
+               f'{attributes if self.attributes else ""}'
 
 
-class FileTransferMode(_NameEnum):
+class FileTransferMode(NameEnum):
     """File Transfer Mode."""
     Yes, No, IfNeeded
 
 
-class TransferOutputMode(_NameEnum):
+class TransferOutputMode(NameEnum):
     """Transfer Output Mode."""
     OnExit, OnExitOrEvict
 
 
-class SubmitVariable(_NameEnum):
-    """Submit Variables."""
+class This(NameEnum):
+    """Universal Condor Object Variables."""
     ClusterId, Cluster, ProcId, Process, Node, Step, ItemIndex, Row, Item
 
     def __str__(self):
         """Get String Form of Variable."""
-        return '$(' + super().__str__() + ')'
+        return f'$({super().__str__()})'
+
+
+def kv_string(key, value, *, connector='='):
+    """Make Key-Value String."""
+    return f'{key}{connector}{value}'
+
+
+def condor_format_mapping(mapping):
+    """Format a Mapping According to Condor Conventions."""
+    return ';'.join(starmap(kv_string, mapping.items()))
+
+
+def condor_format_sequence(sequence):
+    """Format a Sequence According to Condor Conventions."""
+    return ' '.join(map(str, sequence))
+
+
+def open_key_value_pairs(self, *pairs, connector='=', ignore_unpacking_error=True):
+    """Open Pair and Check for Keys and Values."""
+    if not pairs:
+        return None, None
+    if len(pairs) == 1:
+        try:
+            key, value = tuple(map(lambda o: o.strip(), pairs[0].split(connector)))
+            return ((key, value), )
+        except ValueError as value_error:
+            if ignore_unpacking_error:
+                return ((None, None), )
+            raise value_error
+    else:
+        #TODO: replace recursive implementation
+        return sum(tuple(open_key_value_pairs(line) for line in pairs), ())
 
 
 def extract_job_ids(condor_submit_text):
@@ -250,218 +294,266 @@ def extract_job_ids(condor_submit_text):
         yield cluster + process
 
 
-class JobConfig(UserList):
+class WriteModeMixin:
     """
-    Job Configuration Structure.
+    Writing Mode Mixin Class.
+
+    """
+
+    def __init_subclass__(cls, write_mode_keywords, write_mode_invalid_keywords=None, **kwargs):
+        """Initialize Write-Mode Keywords for Class."""
+        super().__init_subclass__(**kwargs)
+        cls._write_mode_keywords = set(write_mode_keywords)
+        cls._write_mode_invalid_keywords = map_value_or(set, write_mode_invalid_keywords, set())
+
+    def _write_mode_insert(self, name, value):
+        """Insert Key-Value Pair into Object."""
+        return NotImplemented
+
+    def _write_mode_invalid_keyword(self, name, value):
+        """Check if Write-Mode Key is valid."""
+        raise ValueError(f'Key: {name} is an invalid Keyword.')
+
+    @property
+    @contextmanager
+    def write_mode(self):
+        """Writing Mode Context Manager."""
+        try:
+            self._write_mode = True
+            yield self
+        finally:
+            self._write_mode = False
+
+    def __setattr__(self, name, value):
+        """Set attributes."""
+        if self._write_mode:
+            if name in type(self)._write_mode_invalid_keywords:
+                self._write_mode_invalid_keyword(name, value)
+            elif name in type(self)._write_mode_keywords:
+                self._write_mode_insert(name, value)
+        else:
+            super().__setattr__(name, value)
+
+
+CONDOR_SUBMIT_COMMANDS = set(
+    'accounting_group',
+    'accounting_group_user',
+    'allow_startup_script',
+    'append_files',
+    'arguments',
+    'azure_admin_key',
+    'azure_admin_username',
+    'azure_auth_file',
+    'azure_image',
+    'azure_location',
+    'azure_size',
+    'batch_queue',
+    'boinc_authenticator_file',
+    'buffer_block_size',
+    'buffer_files',
+    'buffer_size',
+    'compress_files',
+    'concurrency_limits',
+    'concurrency_limits_expr',
+    'copy_to_spool',
+    'coresize',
+    'cream_attributes',
+    'cron_day_of_month',
+    'cron_day_of_week',
+    'cron_hour',
+    'cron_minute',
+    'cron_month',
+    'cron_prep_time',
+    'cron_window',
+    'dagman_log',
+    'deferral_prep_time',
+    'deferral_time',
+    'deferral_window',
+    'delegate_job_GSI_credentials_lifetime',
+    'description',
+    'docker_image',
+    'dont_encrypt_input_files',
+    'dont_encrypt_output_files',
+    'ec2_access_key_id',
+    'ec2_ami_id',
+    'ec2_availability_zone',
+    'ec2_block_device_mapping',
+    'ec2_ebs_volumes',
+    'ec2_elastic_ip',
+    'ec2_iam_profile_arn',
+    'ec2_iam_profile_name',
+    'ec2_instance_type',
+    'ec2_keypair',
+    'ec2_keypair_file',
+    'ec2_parameter_',
+    'ec2_parameter_names',
+    'ec2_secret_access_key',
+    'ec2_security_groups',
+    'ec2_security_ids',
+    'ec2_spot_price',
+    'ec2_tag_',
+    'ec2_tag_names',
+    'ec2_user_data',
+    'ec2_user_data_file',
+    'ec2_vpc_ip',
+    'ec2_vpc_subnet',
+    'email_attributes',
+    'encrypt_execute_directory',
+    'encrypt_input_files',
+    'encrypt_output_files',
+    'environment',
+    'error',
+    'executable',
+    'fetch_files',
+    'file_remaps',
+    'gce_auth_file',
+    'gce_image',
+    'gce_json_file',
+    'gce_machine_type',
+    'gce_metadata',
+    'gce_metadata_file',
+    'gce_preemptible',
+    'getenv',
+    'globus_rematch',
+    'globus_resubmit',
+    'globus_rsl',
+    'grid_resource',
+    'hold',
+    'hold_kill_sig',
+    'image_size',
+    'initialdir',
+    'input',
+    'jar_files',
+    'java_vm_args',
+    'job_ad_information_attrs',
+    'job_batch_name',
+    'job_lease_duration',
+    'job_machine_attrs',
+    'job_max_vacate_time',
+    'keep_claim_idle',
+    'keystore_alias',
+    'keystore_file',
+    'keystore_passphrase_file',
+    'kill_sig',
+    'kill_sig_timeout',
+    'leave_in_queue',
+    'load_profile',
+    'local_files',
+    'log',
+    'log_xml',
+    'machine_count',
+    'match_list_length',
+    'max_job_retirement_time',
+    'max_retries',
+    'max_transfer_input_mb',
+    'max_transfer_output_mb',
+    'my_proxy_credential_name',
+    'my_proxy_host',
+    'my_proxy_new_proxy_lifetime',
+    'my_proxy_password',
+    'my_proxy_refresh_threshold',
+    'my_proxy_server_dn',
+    'next_job_start_delay',
+    'nice_user',
+    'noop_job',
+    'noop_job_exit_code',
+    'noop_job_exit_signal',
+    'nordugrid_rsl',
+    'notification',
+    'on_exit_hold',
+    'on_exit_hold_reason',
+    'on_exit_hold_subcode',
+    'on_exit_remove',
+    'output',
+    'output_destination',
+    'periodic_hold',
+    'periodic_hold_reason',
+    'periodic_hold_subcode',
+    'periodic_release',
+    'periodic_remove',
+    'priority',
+    'queue',
+    'rank',
+    'remote_initialdir',
+    'remove_kill_sig',
+    'rendezvousdir',
+    'request_',
+    'request_cpus',
+    'request_disk',
+    'request_memory',
+    'requirements',
+    'retry_until',
+    'run_as_owner',
+    'should_transfer_files',
+    'skip_filechecks',
+    'stack_size',
+    'stream_error',
+    'stream_input',
+    'stream_output',
+    'submit_event_notes',
+    'success_exit_code',
+    'transfer_error',
+    'transfer_executable',
+    'transfer_input',
+    'transfer_input_files',
+    'transfer_output',
+    'transfer_output_files',
+    'transfer_output_remaps',
+    'universe',
+    'use_x509userproxy',
+    'vm_checkpoint',
+    'vm_disk',
+    'vm_macaddr',
+    'vm_memory',
+    'vm_networking',
+    'vm_networking_type',
+    'vm_no_output_vm',
+    'vm_type',
+    'vmware_dir',
+    'vmware_should_transfer_files',
+    'vmware_snapshot_disk',
+    'want_graceful_removal',
+    'want_name_tag',
+    'want_remote_io',
+    'when_to_transfer_output',
+    'x509userproxy',
+    'xen_initrd',
+    'xen_kernel',
+    'xen_kernel_params',
+    'xen_root'
+)
+
+
+class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMMANDS):
+    """
+    Job Configuration.
 
     """
 
     @classproperty
     def command_names(cls):
         """Get Possible Command Names for Condor Config File."""
-        if not hasattr(cls, '_cmd_names'):
-            cls._cmd_names = ('accounting_group',
-                              'accounting_group_user',
-                              'allow_startup_script',
-                              'append_files',
-                              'arguments',
-                              'azure_admin_key',
-                              'azure_admin_username',
-                              'azure_auth_file',
-                              'azure_image',
-                              'azure_location',
-                              'azure_size',
-                              'batch_queue',
-                              'boinc_authenticator_file',
-                              'buffer_block_size',
-                              'buffer_files',
-                              'buffer_size',
-                              'compress_files',
-                              'concurrency_limits',
-                              'concurrency_limits_expr',
-                              'copy_to_spool',
-                              'coresize',
-                              'cream_attributes',
-                              'cron_day_of_month',
-                              'cron_day_of_week',
-                              'cron_hour',
-                              'cron_minute',
-                              'cron_month',
-                              'cron_prep_time',
-                              'cron_window',
-                              'dagman_log',
-                              'deferral_prep_time',
-                              'deferral_time',
-                              'deferral_window',
-                              'delegate_job_GSI_credentials_lifetime',
-                              'description',
-                              'docker_image',
-                              'dont_encrypt_input_files',
-                              'dont_encrypt_output_files',
-                              'ec2_access_key_id',
-                              'ec2_ami_id',
-                              'ec2_availability_zone',
-                              'ec2_block_device_mapping',
-                              'ec2_ebs_volumes',
-                              'ec2_elastic_ip',
-                              'ec2_iam_profile_arn',
-                              'ec2_iam_profile_name',
-                              'ec2_instance_type',
-                              'ec2_keypair',
-                              'ec2_keypair_file',
-                              'ec2_parameter_',
-                              'ec2_parameter_names',
-                              'ec2_secret_access_key',
-                              'ec2_security_groups',
-                              'ec2_security_ids',
-                              'ec2_spot_price',
-                              'ec2_tag_',
-                              'ec2_tag_names',
-                              'ec2_user_data',
-                              'ec2_user_data_file',
-                              'ec2_vpc_ip',
-                              'ec2_vpc_subnet',
-                              'email_attributes',
-                              'encrypt_execute_directory',
-                              'encrypt_input_files',
-                              'encrypt_output_files',
-                              'environment',
-                              'error',
-                              'executable',
-                              'fetch_files',
-                              'file_remaps',
-                              'gce_auth_file',
-                              'gce_image',
-                              'gce_json_file',
-                              'gce_machine_type',
-                              'gce_metadata',
-                              'gce_metadata_file',
-                              'gce_preemptible',
-                              'getenv',
-                              'globus_rematch',
-                              'globus_resubmit',
-                              'globus_rsl',
-                              'grid_resource',
-                              'hold',
-                              'hold_kill_sig',
-                              'image_size',
-                              'initialdir',
-                              'input',
-                              'jar_files',
-                              'java_vm_args',
-                              'job_ad_information_attrs',
-                              'job_batch_name',
-                              'job_lease_duration',
-                              'job_machine_attrs',
-                              'job_max_vacate_time',
-                              'keep_claim_idle',
-                              'keystore_alias',
-                              'keystore_file',
-                              'keystore_passphrase_file',
-                              'kill_sig',
-                              'kill_sig_timeout',
-                              'leave_in_queue',
-                              'load_profile',
-                              'local_files',
-                              'log',
-                              'log_xml',
-                              'machine_count',
-                              'match_list_length',
-                              'max_job_retirement_time',
-                              'max_retries',
-                              'max_transfer_input_mb',
-                              'max_transfer_output_mb',
-                              'my_proxy_credential_name',
-                              'my_proxy_host',
-                              'my_proxy_new_proxy_lifetime',
-                              'my_proxy_password',
-                              'my_proxy_refresh_threshold',
-                              'my_proxy_server_dn',
-                              'next_job_start_delay',
-                              'nice_user',
-                              'noop_job',
-                              'noop_job_exit_code',
-                              'noop_job_exit_signal',
-                              'nordugrid_rsl',
-                              'notification',
-                              'on_exit_hold',
-                              'on_exit_hold_reason',
-                              'on_exit_hold_subcode',
-                              'on_exit_remove',
-                              'output',
-                              'output_destination',
-                              'periodic_hold',
-                              'periodic_hold_reason',
-                              'periodic_hold_subcode',
-                              'periodic_release',
-                              'periodic_remove',
-                              'priority',
-                              'queue',
-                              'rank',
-                              'remote_initialdir',
-                              'remove_kill_sig',
-                              'rendezvousdir',
-                              'request_',
-                              'request_cpus',
-                              'request_disk',
-                              'request_memory',
-                              'requirements',
-                              'retry_until',
-                              'run_as_owner',
-                              'should_transfer_files',
-                              'skip_filechecks',
-                              'stack_size',
-                              'stream_error',
-                              'stream_input',
-                              'stream_output',
-                              'submit_event_notes',
-                              'success_exit_code',
-                              'transfer_error',
-                              'transfer_executable',
-                              'transfer_input',
-                              'transfer_input_files',
-                              'transfer_output',
-                              'transfer_output_files',
-                              'transfer_output_remaps',
-                              'universe',
-                              'use_x509userproxy',
-                              'vm_checkpoint',
-                              'vm_disk',
-                              'vm_macaddr',
-                              'vm_memory',
-                              'vm_networking',
-                              'vm_networking_type',
-                              'vm_no_output_vm',
-                              'vm_type',
-                              'vmware_dir',
-                              'vmware_should_transfer_files',
-                              'vmware_snapshot_disk',
-                              'want_graceful_removal',
-                              'want_name_tag',
-                              'want_remote_io',
-                              'when_to_transfer_output',
-                              'x509userproxy',
-                              'xen_initrd',
-                              'xen_kernel',
-                              'xen_kernel_params',
-                              'xen_root')
-        return cls._cmd_names
+        return cls._write_mode_keywords
 
     @classmethod
-    def load_from(cls, path, opener=open, *args, clean_input=lambda o: o.strip(), **kwargs):
+    def from_file(cls, path, opener=open, *args, clean_input=lambda o: o.strip(), **kwargs):
         """Load Job Config from File."""
-        config = cls(path=path)
-        with opener(path, *args, **kwargs) as f:
+        config = cls()
+        with opener(load_path, *args, **kwargs) as f:
             config.extend(clean_input(line) for line in f)
         return config
 
-    def __init__(self, *lines, path=None):
+    def __init_subclass__(cls, special_key_map=None, **kwargs):
+        """Initialize Subclasses with Special Key Maps."""
+        super().__init_subclass__(**kwargs)
+        if special_key_map is not None:
+            cls.special_key_map = special_key_map
+        cls.has_special_key_map = classproperty(lambda c: hasattr(c, 'special_key_map'))
+
+    def __init__(self, *lines):
         """Initialize Config."""
         self.__dict__['_write_mode'] = False
         super().__init__(*lines)
-        self.path = Path(value_or(path, '.'))
-        self._saved = False
-        self._log_file = None
 
     @property
     def lines(self):
@@ -473,81 +565,51 @@ class JobConfig(UserList):
         """Set Inner Structure."""
         self.data = new_lines
 
-    def to_text(self, *, add_newline=True):
+    def to_text(self, *, with_newlines=True):
         """Return Config as Multiline Text."""
-        return ('\n' if add_newline else '').join(self)
+        return ('\n' if with_newlines else '').join(self)
 
     @property
     def as_text(self):
         """Return Config as Multiline Text."""
         return self.to_text()
 
-    @property
-    def log_file(self):
-        """Get Log File."""
-        return self._log_file
-
-    def save(self, path=None):
-        """Save Job File to Path."""
-        if not path:
-            path = self.path
-        if path != self.path or not self._saved:
-            path.write_text(self.as_text)
-            self._saved = True
-
-    def submit(self, *args, path=None, **kwargs):
-        """Submit Job From Config."""
-        if path:
-            self.save(path=path)
-        elif not self._saved:
-            self.save()
-        submit_output = decoded(condor_submit(self.path, *args, **kwargs))
-        return tuple(Job(self, job_id, log_file=self.log_file) for job_id in extract_job_ids(submit_output))
-
     def __repr__(self):
         """Representation of Config File."""
-        prefix = 'JobConfig('
-        path_string = 'path="' + str(self.path) + '"|' if self.path else ''
-        data_string = '[' + str(self.data[0:5])[1:-1] + (', ...]' if len(self) > 5 else ']')
-        return prefix + path_string + data_string + ')'
+        data_string = f'[{str(self.data[0:6])[1:-1]}{", ...]" if len(self) > 6 else "]"}'
+        return f'{type(self).__name__}({data_string})'
 
     def __str__(self):
         """Get Config File as a String."""
         return self.as_text
 
-    def _make_kv_string(self, key, value):
-        """Make Key-Value String."""
-        return str(key) + '=' + str(value)
-
-    def add_pairs(self, **kwargs):
-        """Append Key Value Pairs to Config."""
-        self.extend(starmap(self._make_kv_string, kwargs.items()))
-
-    def _open_pair(self, pair_string):
-        """Open Pair and Check for Keys and Values."""
-        lines = pair_string.strip().split('\n')
-        if not lines:
-            return None, None
-        if len(lines) == 1:
-            try:
-                key, value = tuple(map(lambda o: o.strip(), lines[0].split('=')))
-                return key, value
-            except ValueError:
-                return None, None
-        else:
-            return tuple(_open_pair(line) for line in lines)
-
-    def append(self, value):
+    def append(self, value, *, skip_special_key_search=False):
         """Append to Config."""
-        key, internal_value = self._open_pair(value)
-        if key == 'log':
-            self._log_file = Path(internal_value)
+        if not skip_special_key_search and type(self).has_special_key_map:
+            for key, internal_value in open_key_value_pairs(*value.strip().split('\n')):
+                try:
+                    special_name, factory = type(self).special_key_map[key]
+                    setattr(self, special_name, factory(internal_value))
+                except KeyError:
+                    pass
         super().append(str(value))
 
-    def extend(self, other):
+    def append_key_value_pair(self, key, value, *args, **kwargs):
+        """Append Key Value Pair to Config."""
+        return self.append(kv_string(key, value), *args, **kwargs)
+
+    def _write_mode_insert(self, name, value):
+        """Insert Key-Value Pair into Object."""
+        return self.append_key_value_pair(name, value)
+
+    def extend(self, other, *args, **kwargs):
         """Extend Config by another Config."""
         for obj in other:
-            self.append(str(obj))
+            self.append(str(obj), *args, **kwargs)
+
+    def add_pairs(self, pairs, *args, **kwargs):
+        """Append Key Value Pairs to Config."""
+        self.extend(starmap(kv_string, pairs.items()), *args, **kwargs)
 
     def __add__(self, other):
         """Create Sum of Config."""
@@ -557,18 +619,18 @@ class JobConfig(UserList):
 
     def __iadd__(self, other):
         """Add to Config In Place."""
-        self.extend(other)
+        self.extend(list(other))
         return self
 
-    def comments(self, *comments):
+    def append_comments(self, *comments):
         """Add Comments to Config."""
         if not comments:
             return
         if len(comments) == 1:
             comments = comments[0].split('\n')
-        self.extend(map(lambda c: '# ' + c, comments))
+        self.extend(map(lambda c: f'# {c}', comments))
 
-    def email_notification(self, *notification):
+    def append_email_notification(self, *notification):
         """Add Email Notification to Config."""
         if len(notification) == 1 and isinstance(notification[0], Notification):
             notification = str(notification)
@@ -578,27 +640,35 @@ class JobConfig(UserList):
             raise TypeError('Not a Notification Type.')
         self.extend(notification.split('\n'))
 
+    def file_remapping(self, key='file_remaps', **mapping):
+        """Add File Remapping to Config."""
+        self.append_key_value_pair(str(key), condor_format_mapping(mapping),
+                                   skip_special_key_search=True)
+
+    def transfer_output_remapping(self, **mapping):
+        """Transfer File Output Remapping."""
+        self.file_remapping(key='transfer_output_remaps', **kwargs)
+
+    def request_(self, name, value):
+        """Special Request Tag."""
+        self.append_key_value_pair(f'request_{name}', value)
+
     def queue(self, *args):
         """Add Queue to Config."""
-        arg_string = (' ' + ' '.join(map(str, args))) if args else ''
-        self.append('queue' + arg_string)
+        self.append(f'queue{(" " + condor_format_sequence(args)) if args else ""}')
 
-    @property
-    @contextmanager
-    def write_mode(self):
-        """Use writing mode to add lines to file."""
-        try:
-            self._write_mode = True
-            yield self
-        finally:
-            self._write_mode = False
 
-    def __setattr__(self, name, value):
-        """Set attributes."""
-        if self._write_mode and name in type(self).command_names:
-            self.append(self._make_kv_string(name, value))
-        else:
-            self.__dict__[name] = value
+def submit_config(config, path=None, log_file=None, *args, **kwargs):
+    """Submit Configuration File."""
+    if path is None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir) / 'config.txt'
+            with open(temp_path, 'w') as temp:
+                temp.write(line for line in config)
+            submit_output = decoded(condor_submit(temp_path, *args, **kwargs))
+    else:
+        submit_output = decoded(condor_submit(path, *args, **kwargs))
+    return tuple(Job(config, job_id, log_file=log_file) for job_id in extract_job_ids(submit_output))
 
 
 class Job:
@@ -613,7 +683,7 @@ class Job:
         self._job_id = job_id
         self._submitter = submitter
         self._log_file = log_file
-        if not log_file:
+        if log_file is None:
             try:
                 self._log_file = self.config.log_file
             except AttributeError:
@@ -662,9 +732,9 @@ class Job:
         """Check if Job Has Completed."""
         args = ('-wait', str(wait_timeout)) if wait_timeout else ()
         if self.log_file:
-            return not bool(condor_wait(self.log_file.abspath(), *args).returncode)
+            return not bool(condor_wait(Path(self.log_file).abspath(), *args).returncode)
         else:
-            return self.job_id not in current_jobs(self.submitter)[self.submitter]
+            return self.job_id not in user_jobs(self.submitter)
 
     @property
     def has_completed(self):
@@ -683,7 +753,7 @@ class Job:
 
     def __str__(self):
         """String conversion of Job."""
-        return 'Job({job_id})'.format(job_id=self.job_id)
+        return f'Job({self.job_id})'
 
 
 def job_dict(*jobs):
@@ -696,7 +766,7 @@ class JobCompletedException(KeyError):
 
     def __init__(self, job):
         """Initialize Exception."""
-        super().__init__('Job {job_id} has already completed.'.format(job_id=job.job_id))
+        super().__init__(f'Job {job.job_id} has already completed.')
         self._job = job
 
     @property
@@ -738,7 +808,7 @@ class JobMap(Mapping):
         return job
 
     def pop_completed(self):
-        """Clear Jobs that have Completed."""
+        """Pop off Jobs that have Completed."""
         out = []
         for job_id, job in tuple(self._jobs.items()):
             if job.has_completed:
@@ -777,7 +847,7 @@ class JobMap(Mapping):
     def pop(self, key, *default):
         """Pop Job Out of Map."""
         if len(default) not in (0, 1):
-            raise TypeError('Only 1 Default Argument.')
+            raise TypeError('Only 1 Default Argument Allowed.')
         try:
             if self.remove_when_clearing:
                 return self.remove_job(key)[0]
@@ -799,7 +869,7 @@ class JobMap(Mapping):
         """Hold Job."""
         return self[job_id].hold(*args, **kwargs)
 
-    def release_job(self, job_id ,*args, **kwargs):
+    def release_job(self, job_id, *args, **kwargs):
         """Release Job."""
         return self[job_id].release(*args, **kwargs)
 
@@ -823,212 +893,162 @@ class JobMap(Mapping):
         return str(self._jobs)
 
 
-def attach_ext(name, directory, extension):
-    """Attach Extension to File."""
-    return directory / (name + '.' + extension)
+class ConfigUnitBase(WriteModeMixin):
+    """Configuration Unit Base Structure."""
+
+    def __init_subclass__(cls, class_ad_name, class_ad_id_name, fixed_keys, make_prefix_config=True, **kwargs):
+        """Initialize Configuration Subclasses."""
+        super().__init_subclass__(**kwargs)
+        setattr(cls, underscore(class_ad_name),
+                classproperty(lambda c: f'$({class_ad_name})'))
+        setattr(cls, underscore(class_ad_id_name),
+                classproperty(lambda c: f'$({class_ad_id_name})'))
+        for name in fixed_keys:
+            fget = lambda s, n=name: kv_string(n, getattr(s, n)) if getattr(s, n) else ''
+            setattr(cls, f'{underscore(name)}_kv_str', property(fget)
+        if make_prefix_config:
+            def _prefix_config(s):
+                return JobConfig(getattr(s, f'{underscore(name)}_kv_str') for name in fixed_keys)
+            setattr(cls, 'prefix_config', property(_prefix_config))
+
+    def __init__(self, *args, config_path=None, **kwargs):
+        """Initialize Configuration Unit."""
+        super().__init__(*args, **kwargs)
+        self.path = config_path
+
+    def __str__(self):
+        """Get String Representation of ConfigUnit."""
+        return str(self.config)
 
 
-class ConfigUnit:
+class ProcessUnit(ConfigUnitBase,
+                  class_ad_name='Process',
+                  class_ad_id_name='ProcId',
+                  fixed_keys=('initialdir', 'output', 'error'),
+                  write_mode_keywords=CONDOR_SUBMIT_COMMANDS,
+                  write_mode_invalid_keywords=('executable', 'log')):
     """
-    Configuration Unit.
-
-    """
-
-    def __init__(self, name, directory=None, *, exec_ext='py', config_ext='config', log_ext='log', output_ext='out', error_ext='error'):
-        """Post-Initialize ConfigUnit."""
-        self._name = name
-        self._directory = Path(value_or(directory, '.'))
-        self.job_config = JobConfig()
-        self._rebuild(exec_ext, config_ext, log_ext, output_ext, error_ext, first_time=True)
-
-    @property
-    def file_dictionary(self):
-        """File Dictionary of Keys against Paths."""
-        return {'initialdir': self.directory,
-                'log': self.logfile,
-                'output': self.output,
-                'error': self.errorfile,
-                'executable': self.executable}
-
-    def _name_map(self):
-        """Map Extentions to Paths."""
-        return partial(attach_ext, self.name, self.directory)
-
-    def _rebuild(self, exec_ext='py', config_ext='config', log_ext='log', output_ext='out', error_ext='error', *, first_time=False):
-        """Rebuild Configuration."""
-        name_map = self._name_map()
-        self.executable = name_map(exec_ext)
-        self.configfile = name_map(config_ext)
-        self.logfile = name_map(log_ext)
-        self.output = name_map(output_ext)
-        self.errorfile = name_map(error_ext)
-
-        if not first_time:
-            marked_indices = deque()
-            for i, line in enumerate(self.job_config):
-                if any(line.lower().startswith(key) for key in self.file_dictionary):
-                    marked_indices.append(i)
-
-            new_config = JobConfig()
-            index = 0
-            while marked_indices:
-                mark = marked_indices.popleft()
-                if mark > index:
-                    new_config.extend(self.job_config[index:mark])
-                    index = mark
-                if index == mark:
-                    key, _ = map(lambda s: s.strip(), self.job_config[index].strip().split('='))
-                    new_config.add_pairs(**{key: self.file_dictionary[key.lower()]})
-                    index += 1
-            new_config.extend(self.job_config[index:])
-            self.job_config = new_config
-
-        self.job_config.path = self.configfile
-
-    @property
-    def name(self):
-        """Get Name of Config Unit."""
-        return self._name
-
-    @name.setter
-    def name(self, new_name):
-        """Set Name of Config Unit."""
-        self._name = new_name
-        self._rebuild(first_time=False)
-
-    @property
-    def directory(self):
-        """Get Home Directory of Config Unit."""
-        return self._directory
-
-    @directory.setter
-    def directory(self, new_directory):
-        """Set Home Directory of Config Unit."""
-        self._directory = new_directory
-        self._rebuild(first_time=False)
-
-    def make_job_config(self, initial_vars, post_vars, *, save_configuration=False, absolute_paths=True, **kwargs):
-        """Make Job Config."""
-        configuration = JobConfig(path=self.configfile)
-        configuration.add_pairs(**initial_vars)
-        map_absolute = (lambda p: p.abspath()) if absolute_paths else (lambda p: p)
-        with configuration.write_mode as config:
-            config.initialdir = map_absolute(self.directory)
-            config.log = map_absolute(self.logfile)
-            config.output = map_absolute(self.output)
-            config.error = map_absolute(self.errorfile)
-            config.executable = map_absolute(self.executable)
-        configuration.add_pairs(**post_vars)
-        configuration.add_pairs(**kwargs)
-        if save_configuration:
-            self.job_config = configuration
-        return configuration
-
-    @property
-    def as_text(self):
-        """Return Job Config as Text."""
-        return self.job_config.as_text
-
-    def save(self, *args, make_new_config=False, **kwargs):
-        """Save Config Setup."""
-        if not self.directory.exists():
-            self.directory.mkdir(parents=True, exist_ok=True)
-        if make_new_config:
-            self.make_job_config(*args, save_configuration=True, **kwargs)
-        return self.job_config.save(path=self.configfile)
-
-    def submit(self, *args, **kwargs):
-        """Submit Job."""
-        return self.job_config.submit(*args, **kwargs)
-
-
-def add_execute_permissions(path, mode=stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
-    """Add Execute Permissions to a Path."""
-    path.chmod(path.stat().st_mode | mode)
-
-
-class PseudoDaemon(ConfigUnit):
-    """
-    Condor PseudoDaemon.
+    Process Configuration Unit.
 
     """
 
-    @classproperty
-    def source_header(cls):
-        """Default Source Header."""
-        return clean_source('''
-            #!/usr/bin/env python3
-            # -*- coding: utf-8 -*-
+    def __init__(self, executable, initialdir=None, output=None, error=None, **kwargs):
+        """Initialize Process Configuration Unit."""
+        super().__init__(**kwargs)
+        self.executable = executable
+        self.initialdir = map_value_or(Path, initialdir, None)
+        self.output = map_value_or(Path, output, None)
+        self.error = map_value_or(Path, error, None)
+        self._config = JobConfig()
 
-            import sys
-            import time
-            import logging
+    def _write_mode_insert(self, name, value):
+        """Insert Key-Value Pair into Internal Config."""
+        self._config._write_mode_insert(name, value)
 
-            logger = logging.getLogger(__name__)
-            ''')
+    def _write_mode_invalid_keyword(self, name, value):
+        """Catch Invalid Keywords for Write-Mode."""
+        if name == 'executable':
+            raise TypeError('Cannot modify executable in ProcessUnit Context.')
+        if name == 'log':
+            raise TypeError('Cannot modify log in ProcessUnit Context.')
 
-    @classproperty
-    def source_try_hexfarm_import(cls):
-        """Default Hexfarm Import."""
-        return clean_source('''
-            try:
-                import hexfarm as hex
-                from hexfarm import condor
-            except ImportError:
-                pass
-            ''')
+    @property
+    def config(self):
+        """Full Configuration."""
+        return self.prefix_config + self._config
 
-    @classproperty
-    def source_main_wrapper(cls):
-        """Default Main Wrapper."""
-        return clean_source('''
-            if __name__ == '__main__':
-                sys.exit(main(sys.argv))
-            ''')
+    def queue(self, n=1, *args, **kwargs):
+        """Add Queue Command."""
+        self._config.queue(n=n, *args, **kwargs)
 
-    @classproperty
-    def source_footer(cls):
-        """Default Footer."""
-        return cls.source_main_wrapper + '\n\n'
+    def queue_in(self, n=1, *args, **kwargs):
+        """"""
+        #TODO: implement
+        return NotImplemented
 
-    @classproperty
-    def default_source(cls):
-        """Default Source Code."""
-        return '\n\n'.join((cls.source_header,
-                            cls.source_try_hexfarm_import,
-                            clean_source('''
-                                def main(argv):
-                                    argv = argv[1:]
-                                    print(argv, len(argv), 'args')
-                                    return 0
-                                '''),
-                            cls.source_footer))
+    def queue_matching(self, n=1, *args, **kwargs):
+        """"""
+        #TODO: implement
+        return NotImplemented
 
-    def __init__(self, name, directory=None, source=None, *args, **kwargs):
-        """Initialize PseudoDaemon."""
-        super().__init__(name, directory=directory, *args, **kwargs)
-        self.source = value_or(source, type(self).default_source)
+    def queue_from(self, n=1, *args, **kwargs):
+        """"""
+        #TODO: implement
+        return NotImplemented
 
-    def quick_start(self):
-        """Quick Start PseudoDaemon."""
-        self.make_job_config(initial_vars={'universe': Universe.Vanilla, 'getenv': True},
-                             post_vars={'stream_output': True, 'stream_error': True},
-                             save_configuration=True)
-        self.job_config.queue()
-        self.generate_executable(self.source)
-        return self.start()
 
-    def generate_executable(self, source=None, *, rewrite=True):
-        """Generate PseudoDaemon Source Code."""
-        if not self.directory.exists():
-            self.directory.mkdir(parents=True, exist_ok=True)
-        if rewrite and self.executable.exists():
-            self.executable.unlink()
-        self.executable.touch(exist_ok=True)
-        self.executable.write_text(value_or(source, type(self).default_source))
-        add_execute_permissions(self.executable)
-        return self.executable
+class ClusterUnit(ConfigUnitBase,
+                  class_ad_name='Cluster',
+                  class_ad_id_name='ClusterId',
+                  fixed_keys=('executable', 'log')):
+    """
+    Cluster Configuration Unit.
 
-    def start(self, *args, **kwargs):
-        """Start PseudoDaemon."""
-        return self.submit(*args, **kwargs)
+    """
+
+    def __init__(self, executable, log=None, *process_units, **kwargs):
+        """Initialize Cluster Configuration Unit."""
+        super().__init__(**kwargs)
+        self.executable = executable
+        self.log = map_value_or(Path, log, None)
+        self.process_units = process_units
+
+    def append_process(self, process_unit):
+        """Append Process to Cluster Unit."""
+        self.process_units.append(process_unit)
+
+    def append_process_units(self, *process_units):
+        """Extend Process Units."""
+        self.process_units.extend(process_units)
+
+    @property
+    def config(self):
+        """Full Configuration."""
+        return sum(self.process_units, self.prefix_config)
+
+    def save(self, path=None):
+        """Save Config To Path."""
+        path = value_or(path, self.path)
+        if not path:
+            raise TypeError('Path argument must be a valid file path if '
+                            'stored config has no associated path.')
+        Path(path).write_text(self.config.as_text)
+
+    def submit(self, *args, use_temporary_file=False, **kwargs):
+        """Submit Config As a Condor Job."""
+        path = None if use_temporary_file else Path(self.path)
+        if path and not path.exists():
+            raise FileNotFoundError(f'Path {path} cannot be found.')
+        return submit_config(self.config, path=path, log_file=self.log, *args, **kwargs)
+
+
+class MultiClusterUnit:
+    """
+    Multi-Cluster Configuration Unit.
+
+    """
+
+    def __init__(self, prefix_config, *cluster_units):
+        """Initialize Multi-Cluster Unit."""
+        self.prefix_config = prefix_config
+        self.cluster_units = cluster_units
+
+    def append_cluster(self, cluster_unit):
+        """Append Cluster to Units."""
+        self.cluster_units.append(cluster_unit)
+
+    def append_custer_units(self, *cluster_units):
+        """Extend Cluster Units."""
+        self.cluster_units.extend(cluster_units)
+
+    @property
+    def total_config(self):
+        """Total Configuration."""
+        return sum(self.cluster_units, self.prefix_config)
+
+    def submit(self, *args, use_temporary_file=False, **kwargs):
+        """Submit Config As a Condor Job."""
+        #FIXME: figure out how to parse a multicluster unit condor_submit output so this can be
+        #       joined into one file
+        return tuple(cluster.submit(use_temporary_file=use_temporary_file, *args, **kwargs)
+                     for cluster in self.cluster_units)

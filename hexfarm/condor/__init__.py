@@ -38,6 +38,7 @@ import logging
 # -------------- Hexfarm  Library -------------- #
 
 from .core import *
+from .daemon import PseudoDaemon
 
 
 logger = logging.getLogger(__name__)
@@ -51,4 +52,4 @@ except Exception:
     logger.info('HTCondor could not be imported.')
 
 
-__all__ = ('HTCONDOR_INSTALLED',) + core.__all__
+__all__ = core.__all__ + ('HTCONDOR_INSTALLED', 'PseudoDaemon')
