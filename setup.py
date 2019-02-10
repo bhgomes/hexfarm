@@ -107,4 +107,7 @@ if __name__ == '__main__':
     if 'exclude' in about['packages']:
         about['packages'] = find_packages(exclude=tuple(about['packages']['exclude']))
 
+    conda_build_file = about['conda_build_file']
+    del about['conda_build_file']
+    
     setup(cmdclass={Upload.name: Upload}, **about)
