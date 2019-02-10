@@ -118,11 +118,9 @@ def build_executable(path, source_code):
     """Generate Source Code File."""
     path = Path(path)
     parent = path.parent
-    if not parent.exists():
-        parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        path.unlink()
-    path.touch(exist_ok=True)
+    parent.makedirs_p()
+    path.remove_p()
+    path.touch()
     path.write_text(source_code)
     add_execute_permissions(path)
     return path
