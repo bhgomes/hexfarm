@@ -17,6 +17,7 @@ from path import Path
 # -------------- Hexfarm  Library -------------- #
 
 from hexfarm import ME, run_main
+from hexfarm.io import build_executable
 import hexfarm.condor as condor
 
 
@@ -64,7 +65,7 @@ def main(argv):
     directory = Path('.temp/simple_daemon')
     directory.makedirs_p()
 
-    executable = condor.build_executable(directory / 'job.py', JOB_SOURCE)
+    executable = build_executable(directory / 'job.py', JOB_SOURCE)
     logfile = (directory / 'job.log').abspath()
 
     with condor.JobConfig(path=directory / 'config.cfg').write_mode as config:

@@ -33,7 +33,6 @@ Daemon Utilities for the HTCondor Parallel Computing Framework.
 
 # -------------- Standard Library -------------- #
 
-import stat
 from dataclasses import dataclass
 from inspect import cleandoc as clean_source
 
@@ -53,9 +52,7 @@ __all__ = (
     'ssh_connection',
     'sftp_connection',
     'get_data',
-    'put_data',
-    'add_execute_permissions',
-    'build_executable'
+    'put_data'
 )
 
 
@@ -107,23 +104,6 @@ def put_data(connection, *, remove_source=False):
                 localpath.remove_p()
         return attributes
     return inner_put
-
-
-def add_execute_permissions(path, mode=stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
-    """Add Execute Permissions to a Path."""
-    path.chmod(path.stat().st_mode | mode)
-
-
-def build_executable(path, source_code):
-    """Generate Source Code File."""
-    path = Path(path)
-    parent = path.parent
-    parent.makedirs_p()
-    path.remove_p()
-    path.touch()
-    path.write_text(source_code)
-    add_execute_permissions(path)
-    return path
 
 
 class PseudoDaemon:

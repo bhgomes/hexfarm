@@ -38,7 +38,7 @@ import logging
 # -------------- Hexfarm  Library -------------- #
 
 from .core import *
-from .daemon import clean_source, build_executable, PseudoDaemon
+from .daemon import clean_source, PseudoDaemon
 
 
 logger = logging.getLogger(__name__)

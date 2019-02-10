@@ -34,6 +34,7 @@ Utilities for IO.
 # -------------- Standard Library -------------- #
 
 import os
+import stat
 
 # -------------- External Library -------------- #
 
@@ -48,6 +49,8 @@ __all__ = (
     'has_extension',
     'walk_paths',
     'fwalk_paths',
+    'add_execute_permissions',
+    'build_executable',
     'format_file'
 )
 
@@ -93,6 +96,23 @@ def fwalk_paths(
                                               followlinks=followlinks,
                                               dir_fd=dir_fd):
         yield root, filter(dir_predicate, dirs), filter(file_predicate, files), rootfd
+
+
+def add_execute_permissions(path, mode=stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+    """Add Execute Permissions to a Path."""
+    path.chmod(path.stat().st_mode | mode)
+
+
+def build_executable(path, source_code):
+    """Generate Source Code File."""
+    path = Path(path)
+    parent = path.parent
+    parent.makedirs_p()
+    path.remove_p()
+    path.touch()
+    path.write_text(source_code)
+    add_execute_permissions(path)
+    return path
 
 
 def format_file(source, target, **kwargs):

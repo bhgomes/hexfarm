@@ -527,7 +527,7 @@ CONDOR_SUBMIT_COMMANDS = {
 
 class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMMANDS):
     """
-    Job Configuration.
+    Job Configuration Base.
 
     """
 
@@ -547,7 +547,6 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
         super().__init_subclass__(**kwargs)
         if special_key_map is not None:
             cls.special_key_map = special_key_map
-        cls.has_special_key_map = classproperty(lambda c: hasattr(c, 'special_key_map'))
 
     def __init__(self, *lines, path=None):
         """Initialize Config."""
@@ -622,7 +621,7 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
 
     def append(self, value, *, skip_special_key_search=False):
         """Append to Config."""
-        if not skip_special_key_search and type(self).has_special_key_map:
+        if not skip_special_key_search and hasattr(type(self), 'special_key_map'):
             for key, internal_value in open_key_value_pairs(*value.strip().split('\n')):
                 try:
                     special_name, factory = type(self).special_key_map[key]
