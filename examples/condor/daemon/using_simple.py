@@ -42,6 +42,9 @@ import hexfarm.condor as condor
 @run_main()
 def main(argv):
     """Build Simple Deamon from simple.py."""
+
+    #FIXME: Not working because Condor Schedd cannot be found when running meta-job
+    
     executable = 'examples/condor/daemon/simple.py'
     add_execute_permissions(executable)
     config = condor.minimal_config('simple_pseudo', executable, '.temp/simple_daemon', keep_env=True)
