@@ -884,7 +884,7 @@ class JobMap(Mapping):
 
     def append(self, *jobs):
         """Append Jobs to JobMap."""
-        self.update(job_dict(jobs))
+        self.update(job_dict(*jobs))
 
     def pop(self, key, *default):
         """Pop Job Out of Map."""
