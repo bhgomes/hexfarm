@@ -700,6 +700,7 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
 
 def submit_config(config, path=None, log_file=None, *args, **kwargs):
     """Submit Configuration File."""
+    # FIXME: (DRY) generalize path making
     if path is None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir) / 'config.txt'
