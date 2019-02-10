@@ -88,7 +88,7 @@ def job_submit_loop(max_job_count):
 @run_main()
 def main(argv):
     """Simple Daemon."""
-    directory = Path('.temp/simple_daemon')
+    directory = Path('/users/h2/bhgomes/docs/projects/hexfarm/.temp/simple_daemon')
     directory.makedirs_p()
 
     executable = build_executable(directory / 'job.py', JOB_SOURCE)
