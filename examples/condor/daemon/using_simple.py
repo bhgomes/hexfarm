@@ -34,7 +34,7 @@ Basic Condor PseudoDaemon Implementation.
 
 # -------------- Hexfarm  Library -------------- #
 
-from hexfarm import run_main, decode
+from hexfarm import run_main, decoded
 import hexfarm.condor as condor
 
 
@@ -48,4 +48,4 @@ def main(argv):
     runner = condor.JobManager().add_config(config.name, config, remove_completed_jobs=True)
     runner.submit()
     print('Simple Pseudo Submitted!')
-    print(decode(condor.condor_q()))
+    print(decoded(condor.condor_q()))

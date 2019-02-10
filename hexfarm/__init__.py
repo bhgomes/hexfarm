@@ -46,7 +46,7 @@ import sympy as sym
 
 from .condor import HTCONDOR_INSTALLED
 from .cli import run_main
-from .shell import ME
+from .shell import ME, decoded
 from .util import *
 
 from ._version import __version_info__, __version__
