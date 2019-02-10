@@ -45,16 +45,17 @@ def main(argv):
 '''.format(job_range=JOB_RANGE, job_sleep=JOB_SLEEP))
 
 
-def submit_jobs(job_map, max_count):
+def job_submit_loop(max_job_count):
     """Submit Jobs Until Maximum Count."""
-    while True:
-        count = len(job_map)
-        if count >= max_count:
-            break
-        print('{count} jobs running.'.format(count=count))
-        if count < max_count:
+    def inner_loop(config_runner):
+        count = config_runner.running_job_count
+        if count >= max_job_count:
+            return False
+        print(f'{count} jobs running.')
+        if count < max_job_count:
             print('Submitting Jobs ...')
-            job_map.submit()
+            return True
+    return inner_loop
 
 
 @run_main()
@@ -62,27 +63,26 @@ def main(argv):
     """Simple Daemon."""
     directory = Path('.temp/simple_daemon')
     directory.makedirs_p()
-    config = condor.JobConfig(path=directory / 'config.cfg')
-    executable = directory / 'job.py'
-    executable.remove_p()
-    executable.write_text(JOB_SOURCE)
-    condor.add_execute_permissions(executable)
 
-    with config.write_mode as cfg:
-        cfg.comments('Simple HEXFARM Pseudo Daemon', 'bhgomes')
-        cfg.initialdir = directory
-        cfg.log = (directory / 'job.log').abspath()
-        cfg.error = 'job_$(Cluster)_$(Process).error'
-        cfg.output = 'job_$(Cluster)_$(Process).out'
-        cfg.executable = executable
-        cfg.getenv = True
-        cfg.stream_output = True
-        cfg.queue(QUEUE_COUNT)
+    executable = condor.create_executable(directory / 'job.py', JOB_SOURCE)
+    logfile = (directory / 'job.log').abspath()
 
-    job_map = condor.JobMap(remove_completed_jobs=True, source_config=config)
+    with condor.JobConfig(path=directory / 'config.cfg').write_mode as config:
+        config.comments('Simple HEXFARM Pseudo Daemon', 'bhgomes')
+        config.log = logfile
+        config.executable = executable
+        config.getenv = True
+        config.stream_output = True
+        config.initialdir = directory
+        config.error = 'job_$(Cluster)_$(Process).error'
+        config.output = 'job_$(Cluster)_$(Process).out'
+        config.queue(QUEUE_COUNT)
+
+    manager = condor.JobManager()
+    runner = manager.add_config('simple_daemon', config, logfile=logfile)
 
     while True:
-        print('Current Jobs:', len(job_map))
-        submit_jobs(job_map, MAX_JOB_COUNT)
-        print('Sleeping for {sleep} seconds ...'.format(sleep=DAEMON_SLEEP))
+        print(f'Current Jobs: {manager.running_job_count}')
+        runner.submit_while(job_submit_loop(MAX_JOB_COUNT))
+        print(f'Sleeping for {DAEMON_SLEEP} seconds ...')
         time.sleep(DAEMON_SLEEP)

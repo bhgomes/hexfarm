@@ -1,3 +1,3 @@
 from hexfarm import *
 
-print(hex.np.random.uniform())
+print(np.random.uniform())

@@ -34,10 +34,10 @@ Core Utilities for the HTCondor Parallel Computing Framework.
 # -------------- Standard Library -------------- #
 
 import tempfile
-from collections import UserList
+from collections import UserList, deque
 from collections.abc import Mapping
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 from functools import partial
 from itertools import starmap
 from typing import Sequence
@@ -535,12 +535,10 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
         return cls._write_mode_keywords
 
     @classmethod
-    def from_file(cls, path, opener=open, *args, clean_input=lambda o: o.strip(), **kwargs):
+    def from_file(cls, path, opener=open, *args, clean_input=str.strip, keep_path=True, **kwargs):
         """Load Job Config from File."""
-        config = cls()
-        with opener(load_path, *args, **kwargs) as f:
-            config.extend(clean_input(line) for line in f)
-        return config
+        with opener(path, *args, **kwargs) as file:
+            return cls(*(clean_input(line) for line in file), path=path if keep_path else None)
 
     def __init_subclass__(cls, special_key_map=None, **kwargs):
         """Initialize Subclasses with Special Key Maps."""
@@ -549,10 +547,48 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
             cls.special_key_map = special_key_map
         cls.has_special_key_map = classproperty(lambda c: hasattr(c, 'special_key_map'))
 
-    def __init__(self, *lines):
+    def __init__(self, *lines, path=None):
         """Initialize Config."""
         self.__dict__['_write_mode'] = False
         super().__init__(*lines)
+        self._path = path
+
+    def _build_path_save_mechanism(self):
+        """Build Path Save Mechanism."""
+        if hasattr(self, 'save'):
+            raise AttributeError('JobConfig has no attribute _build_path_save_mechanism.')
+
+        def _save(self):
+            Path(s.path).write_text(s.as_text)
+
+        def _save_as(s, new_path):
+            s._path = new_path
+            return s.save()
+
+        self.save = _save
+        self.save.__doc__ = """Save Config to File."""
+        self.save_as = _save_as
+        self.save_as.__doc__ = """Save Config at New Path."""
+
+    @property
+    def path(self):
+        """Get Path of Config if Exists."""
+        if self._path is None:
+            raise AttributeError('JobConfig has no attribute path.')
+        try:
+            self._build_path_save_mechanism()
+        except AttributeError:
+            pass
+        return self._path
+
+    @path.setter
+    def path(self, value):
+        """Set Path of Config if Exists."""
+        self._path = value
+        try:
+            self._build_path_save_mechanism()
+        except AttributeError:
+            pass
 
     @property
     def lines(self):
@@ -780,13 +816,11 @@ class JobMap(Mapping):
 
     """
 
-    def __init__(self, *jobs, remove_completed_jobs=False, remove_when_clearing=True, source_config=None):
+    def __init__(self, *jobs, remove_completed_jobs=False, remove_when_clearing=True):
         """Initialize Job Mapping."""
         self._jobs = job_dict(*jobs)
         self.remove_completed_jobs = remove_completed_jobs
         self.remove_when_clearing = remove_when_clearing
-        if source_config is not None:
-            self.attach_config(source_config)
 
     @property
     def job_ids(self):
@@ -839,9 +873,9 @@ class JobMap(Mapping):
         """Extend Job Map."""
         self._jobs.update(other)
 
-    def append(self, jobs):
+    def append(self, *jobs):
         """Append Jobs to JobMap."""
-        self.update(job_dict(*jobs))
+        self.update(job_dict(jobs))
 
     def pop(self, key, *default):
         """Pop Job Out of Map."""
@@ -871,17 +905,6 @@ class JobMap(Mapping):
     def release_job(self, job_id, *args, **kwargs):
         """Release Job."""
         return self[job_id].release(*args, **kwargs)
-
-    def append_from_submit(self, config, *args, **kwargs):
-        """Append to JobMap via Config Submit."""
-        jobs = config.submit(*args, **kwargs)
-        self.append(jobs)
-        return jobs
-
-    def attach_config(self, config):
-        """Attach a Configuration File to Submit Events."""
-        self.source_config = config
-        self.submit = partial(self.append_from_submit, self.source_config)
 
     def __repr__(self):
         """Representation of JobMap."""
@@ -1052,3 +1075,75 @@ class MultiClusterUnit:
         #       joined into one file
         return tuple(cluster.submit(use_temporary_file=use_temporary_file, *args, **kwargs)
                      for cluster in self.cluster_units)
+
+
+@dataclass
+class ConfigRunner:
+    """
+    Configuration Runner.
+
+    """
+
+    config: JobConfig
+    path: InitVar[Path]
+    logfile: Path
+    jobmap: JobMap
+
+    def __post_init__(self, path):
+        """Post-Initialize Config Runner."""
+        if Path(path).abspath() != Path(self.config.path).abspath():
+            self.config.save_as(path)
+
+    @property
+    def config_path(self):
+        """Get Configuration Path."""
+        return self.config.path
+
+    @property
+    def running_job_count(self):
+        """Get Current Running Job Count."""
+        return len(self.jobmap)
+
+    def submit(self, *args, **kwargs):
+        """Submit Jobs."""
+        jobs = submit_config(self.config, path=self.config_path, log_file=self.logfile, *args, **kwargs)
+        self.jobmap.append(*jobs)
+        return jobs
+
+    def submit_while(self, predicate, *args, wait=None, **kwargs):
+        """Submit Jobs while predicate holds."""
+        while predicate(self):
+            self.submit(*args, **kwargs)
+            if wait:
+                time.sleep(wait)
+
+
+class JobManager:
+    """
+    Job Manager.
+
+    """
+
+    def __init__(self):
+        """Initialize Job Manager."""
+        self._queue = deque()
+        self._config_map = dict()
+
+    def add_config(self, name, config, path=None, logfile=None, **job_map_options):
+        """Add Configuration to JobManager."""
+        if path is None:
+            try:
+                path = config.path
+            except AttributeError:
+                pass
+        if logfile is None:
+            try:
+                logfile = config.log
+            except AttributeError:
+                pass
+        self._config_map[name] = ConfigSet(config, path, logfile, JobMap(**job_map_options))
+        return self._config_map[name]
+
+    def __getitem__(self, name):
+        """Get Configuration Runner."""
+        return self._config_map[name]
