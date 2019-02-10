@@ -108,7 +108,7 @@ def main(argv):
     manager = condor.JobManager()
     runner = manager.add_config('simple_daemon', config, logfile=logfile, remove_completed_jobs=True)
 
-    print(condor.condor_submit(config.path, *args, **kwargs))
+    print(condor.condor_submit(config.path))
     return
 
     while True:
