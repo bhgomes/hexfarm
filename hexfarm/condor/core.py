@@ -703,12 +703,14 @@ def submit_config(config, path=None, log_file=None, *args, **kwargs):
     if path is None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir) / 'config.txt'
-            with open(temp_path, 'w') as temp:
-                temp.write(line for line in config)
+            temp_path.touch()
+            temp_path.write_text(config.as_text)
             submit_output = decoded(condor_submit(temp_path, *args, **kwargs))
     else:
-        submit = condor_submit(path, *args, **kwargs)
-        print(f'total_submit={submit}')
+        if not path.exists():
+            path.parent.makedirs_p()
+            path.touch()
+            path.write_text(config.as_text)
         submit_output = decoded(condor_submit(path, *args, **kwargs))
     return tuple(Job(config, job_id, log_file=log_file) for job_id in extract_job_ids(submit_output))
 
