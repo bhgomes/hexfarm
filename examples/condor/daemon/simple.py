@@ -68,7 +68,7 @@ def main(argv):
     logfile = (directory / 'job.log').abspath()
 
     with condor.JobConfig(path=directory / 'config.cfg').write_mode as config:
-        config.comments('Simple HEXFARM Pseudo Daemon', 'bhgomes')
+        config.append_comments('Simple HEXFARM Pseudo Daemon', 'bhgomes')
         config.log = logfile
         config.executable = executable
         config.getenv = True
