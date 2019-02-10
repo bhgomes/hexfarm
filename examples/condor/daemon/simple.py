@@ -83,7 +83,7 @@ def main(argv):
     runner = manager.add_config('simple_daemon', config, logfile=logfile)
 
     while True:
-        print(f'Current Jobs: {manager.running_job_count}')
+        print(f'Current Jobs: {runner.running_job_count}')
         runner.submit_while(job_submit_loop(MAX_JOB_COUNT))
         print(f'Sleeping for {DAEMON_SLEEP} seconds ...')
         time.sleep(DAEMON_SLEEP)

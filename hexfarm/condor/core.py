@@ -290,7 +290,11 @@ def open_key_value_pairs(self, *pairs, connector='=', ignore_unpacking_error=Tru
 
 def extract_job_ids(condor_submit_text):
     """Extract Job Ids from Condor Submit Text."""
-    _, _, count, *_, cluster = condor_submit_text.strip().split()
+    try:
+        _, _, count, *_, cluster = condor_submit_text.strip().split()
+    except ValueError as e:
+        print(condor_submit_text)
+        raise e
     for process in map(str, range(int(count))):
         yield cluster + process
 
