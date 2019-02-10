@@ -293,7 +293,7 @@ def extract_job_ids(condor_submit_text):
     try:
         _, _, count, *_, cluster = condor_submit_text.strip().split()
     except ValueError as e:
-        print(condor_submit_text)
+        print(f'submit="{condor_submit_text}"')
         raise e
     for process in map(str, range(int(count))):
         yield cluster + process
@@ -707,6 +707,7 @@ def submit_config(config, path=None, log_file=None, *args, **kwargs):
                 temp.write(line for line in config)
             submit_output = decoded(condor_submit(temp_path, *args, **kwargs))
     else:
+        print('PROPER PATH')
         submit_output = decoded(condor_submit(path, *args, **kwargs))
     return tuple(Job(config, job_id, log_file=log_file) for job_id in extract_job_ids(submit_output))
 
