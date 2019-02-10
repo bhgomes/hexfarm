@@ -1142,7 +1142,7 @@ class JobManager:
                 logfile = config.log
             except AttributeError:
                 pass
-        self._config_map[name] = ConfigSet(config, path, logfile, JobMap(**job_map_options))
+        self._config_map[name] = ConfigRunner(config, path, logfile, JobMap(**job_map_options))
         return self._config_map[name]
 
     def __getitem__(self, name):
