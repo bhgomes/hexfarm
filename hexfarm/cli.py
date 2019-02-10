@@ -44,14 +44,23 @@ __all__ = (
 )
 
 
-def run_main(argv=sys.argv, exit=sys.exit, auto_run=True, ignore_arg_zero=False):
+def run_main(
+    argv=sys.argv,
+    exit=sys.exit,
+    *,
+    auto_run=True,
+    ignore_arg_zero=False,
+    check_name_is_main=False
+):
     """Run Main Function with Given Arguments and Exit Process."""
     def internal(main):
         @wraps(main)
         def wrapper():
             return exit(main(argv[1:] if ignore_arg_zero else argv))
-        # TODO: check the __name__ == '__main__' condition
-        if auto_run and __name__ == '__main__':
-            wrapper()
+        if auto_run:
+            if check_name_is_main and __name__ == '__main__':
+                wrapper()
+            else:
+                wrapper()
         return wrapper
     return internal
