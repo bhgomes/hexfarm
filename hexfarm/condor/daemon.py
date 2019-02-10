@@ -48,6 +48,17 @@ from ..util import classproperty, value_or
 from .core import *
 
 
+__all__ = (
+    'clean_source',
+    'ssh_connection',
+    'sftp_connection',
+    'get_data',
+    'put_data',
+    'add_execute_permissions',
+    'build_executable'
+)
+
+
 def ssh_connection(hostname, port=22, username=None, password=None, *, missing_host_key_policy=AutoAddPolicy, **kwargs):
     """Establish SSH Connection."""
     client = SSHClient()
@@ -103,16 +114,18 @@ def add_execute_permissions(path, mode=stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOT
     path.chmod(path.stat().st_mode | mode)
 
 
-def build_executable(directory, executable_path, source_code, *, rewrite=True):
+def build_executable(path, source_code):
     """Generate Source Code File."""
-    if not directory.exists():
-        directory.mkdir(parents=True, exist_ok=True)
-    if rewrite and executable_path.exists():
-        executable_path.unlink()
-    executable_path.touch(exist_ok=True)
-    executable_path.write_text(source_code)
-    add_execute_permissions(executable_path)
-    return executable_path
+    path = Path(path)
+    parent = path.parent
+    if not parent.exists():
+        parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        path.unlink()
+    path.touch(exist_ok=True)
+    path.write_text(source_code)
+    add_execute_permissions(path)
+    return path
 
 
 class PseudoDaemon:

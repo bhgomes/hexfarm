@@ -64,7 +64,7 @@ def main(argv):
     directory = Path('.temp/simple_daemon')
     directory.makedirs_p()
 
-    executable = condor.create_executable(directory / 'job.py', JOB_SOURCE)
+    executable = condor.build_executable(directory / 'job.py', JOB_SOURCE)
     logfile = (directory / 'job.log').abspath()
 
     with condor.JobConfig(path=directory / 'config.cfg').write_mode as config:

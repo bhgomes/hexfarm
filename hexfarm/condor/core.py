@@ -77,7 +77,9 @@ __all__ = (
     'ConfigUnitBase',
     'ProcessUnit',
     'ClusterUnit',
-    'MultiClusterUnit'
+    'MultiClusterUnit',
+    'ConfigRunner',
+    'JobManager'
 )
 
 
