@@ -44,9 +44,9 @@ def main(argv):
     """Build Simple Deamon from simple.py."""
     executable = 'examples/condor/daemon/simple.py'
     add_execute_permissions(executable)
-    config = condor.minimal_config('simple_pseudo', executable, '.temp/simple_daemon')
+    config = condor.minimal_config('simple_pseudo', executable, '.temp/simple_daemon', keep_env=True)
     config.queue()
     runner = condor.JobManager().add_config(config.name, config, remove_completed_jobs=True)
     runner.submit()
     print('Simple Pseudo Submitted!')
-    print(decoded(condor.condor_q()))
+    print(decoded(condor.user_jobs()))
