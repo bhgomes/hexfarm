@@ -108,9 +108,6 @@ def main(argv):
     manager = condor.JobManager()
     runner = manager.add_config('simple_daemon', config, logfile=logfile, remove_completed_jobs=True)
 
-    print(condor.condor_submit(config.path))
-    return
-
     while True:
         print(f'Current Jobs: {runner.running_job_count}')
         runner.submit_while(job_submit_loop(MAX_JOB_COUNT))
