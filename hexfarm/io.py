@@ -100,6 +100,7 @@ def fwalk_paths(
 
 def add_execute_permissions(path, mode=stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
     """Add Execute Permissions to a Path."""
+    path = Path(path)
     path.chmod(path.stat().st_mode | mode)
 
 

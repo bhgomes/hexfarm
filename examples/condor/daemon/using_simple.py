@@ -35,15 +35,16 @@ Basic Condor PseudoDaemon Implementation.
 # -------------- Hexfarm  Library -------------- #
 
 from hexfarm import run_main, decoded
+from hexfarm.io import add_execute_permissions
 import hexfarm.condor as condor
 
 
 @run_main()
 def main(argv):
     """Build Simple Deamon from simple.py."""
-    config = condor.minimal_config('simple_pseudo',
-                                   'examples/condor/daemon/simple.py',
-                                   '.temp/simple_daemon')
+    executable = 'examples/condor/daemon/simple.py'
+    add_execute_permissions(executable)
+    config = condor.minimal_config('simple_pseudo', executable, '.temp/simple_daemon')
     config.queue()
     runner = condor.JobManager().add_config(config.name, config, remove_completed_jobs=True)
     runner.submit()

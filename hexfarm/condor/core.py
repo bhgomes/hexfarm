@@ -717,11 +717,10 @@ def minimal_config(
 ):
     """Construct Minimal Job Configuration."""
     directory = Path(directory)
-    name_prefix = directory / name
     if use_absolute_paths:
-        build_path = lambda ext: (name_prefix / f'.{ext}').abspath()
+        build_path = lambda ext: (directory / f'{name}.{ext}').abspath()
     else:
-        build_path = lambda ext: name_prefix / f'.{ext}'
+        build_path = lambda ext: directory / f'{name}.{ext}'
     config = JobConfig(path=build_path(config_ext))
     config.name = property(lambda s: name)
     with config.write_mode as config:
