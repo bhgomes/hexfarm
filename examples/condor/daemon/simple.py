@@ -80,7 +80,7 @@ def main(argv):
         config.queue(QUEUE_COUNT)
 
     manager = condor.JobManager()
-    runner = manager.add_config('simple_daemon', config, logfile=logfile)
+    runner = manager.add_config('simple_daemon', config, logfile=logfile, remove_completed_jobs=True)
 
     while True:
         print(f'Current Jobs: {runner.running_job_count}')

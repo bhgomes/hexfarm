@@ -698,7 +698,7 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
         self.append(f'queue{(" " + condor_format_sequence(args)) if args else ""}')
 
 
-def submit_config(config, path=None, log_file=None, *args, **kwargs):
+def submit_config(config, path=None, logfile=None, *args, **kwargs):
     """Submit Configuration File."""
     # FIXME: (DRY) generalize path making
     if path is None:
@@ -713,7 +713,7 @@ def submit_config(config, path=None, log_file=None, *args, **kwargs):
             path.touch()
             path.write_text(config.as_text)
         submit_output = decoded(condor_submit(path, *args, **kwargs))
-    return tuple(Job(config, job_id, log_file=log_file) for job_id in extract_job_ids(submit_output))
+    return tuple(Job(config, job_id, logfile=logfile) for job_id in extract_job_ids(submit_output))
 
 
 class Job:
@@ -722,15 +722,15 @@ class Job:
 
     """
 
-    def __init__(self, config, job_id, submitter=me(), log_file=None):
+    def __init__(self, config, job_id, submitter=me(), logfile=None):
         """Initialize Job Object."""
         self._config = config
         self._job_id = job_id
         self._submitter = submitter
-        self._log_file = log_file
-        if log_file is None:
+        self._logfile = logfile
+        if logfile is None:
             try:
-                self._log_file = self.config.log_file
+                self._logfile = self.config.logfile
             except AttributeError:
                 pass
 
@@ -745,9 +745,9 @@ class Job:
         return self._job_id
 
     @property
-    def log_file(self):
+    def logfile(self):
         """Get Path of Log File for this Job."""
-        return self._log_file
+        return self._logfile
 
     @property
     def submitter(self):
@@ -776,8 +776,8 @@ class Job:
     def check(self, wait_timeout=None):
         """Check if Job Has Completed."""
         args = ('-wait', str(wait_timeout)) if wait_timeout else ()
-        if self.log_file:
-            return not bool(condor_wait(Path(self.log_file).abspath(), *args).returncode)
+        if self.logfile:
+            return not bool(condor_wait(Path(self.logfile).abspath(), *args).returncode)
         else:
             return self.job_id not in user_jobs(self.submitter)
 
@@ -1052,7 +1052,7 @@ class ClusterUnit(ConfigUnitBase,
         path = None if use_temporary_file else Path(self.path)
         if path and not path.exists():
             raise FileNotFoundError(f'Path {path} cannot be found.')
-        return submit_config(self.config, path=path, log_file=self.log, *args, **kwargs)
+        return submit_config(self.config, path=path, logfile=self.log, *args, **kwargs)
 
 
 class MultiClusterUnit:
@@ -1116,7 +1116,7 @@ class ConfigRunner:
 
     def submit(self, *args, **kwargs):
         """Submit Jobs."""
-        jobs = submit_config(self.config, path=self.config_path, log_file=self.logfile, *args, **kwargs)
+        jobs = submit_config(self.config, path=self.config_path, logfile=self.logfile, *args, **kwargs)
         self.jobmap.append(*jobs)
         return jobs
 
@@ -1139,7 +1139,7 @@ class JobManager:
         self._queue = deque()
         self._config_map = dict()
 
-    def add_config(self, name, config, path=None, logfile=None, **job_map_options):
+    def add_config(self, name, config, path=None, logfile=None, jobmap=None, **job_map_options):
         """Add Configuration to JobManager."""
         if path is None:
             try:
@@ -1151,9 +1151,13 @@ class JobManager:
                 logfile = config.log
             except AttributeError:
                 pass
-        self._config_map[name] = ConfigRunner(config, path, logfile, JobMap(**job_map_options))
-        return self._config_map[name]
+        self[name] = ConfigRunner(config, path, logfile, value_or(jobmap, JobMap(**job_map_options)))
+        return self[name]
 
     def __getitem__(self, name):
         """Get Configuration Runner."""
         return self._config_map[name]
+
+    def __setitem__(self, name, value):
+        """Set Configuration Runner."""
+        self._config_map[name] = value
