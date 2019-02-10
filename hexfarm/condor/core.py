@@ -69,6 +69,7 @@ __all__ = (
     'extract_job_ids',
     'CONDOR_SUBMIT_COMMANDS',
     'JobConfig',
+    'minimal_config',
     'submit_config',
     'Job',
     'job_dict',
@@ -290,11 +291,7 @@ def open_key_value_pairs(self, *pairs, connector='=', ignore_unpacking_error=Tru
 
 def extract_job_ids(condor_submit_text):
     """Extract Job Ids from Condor Submit Text."""
-    try:
-        _, _, count, *_, cluster = condor_submit_text.strip().split()
-    except ValueError as e:
-        print(f'submit_text= "{condor_submit_text}"')
-        raise e
+    _, _, count, *_, cluster = condor_submit_text.strip().split()
     for process in map(str, range(int(count))):
         yield cluster + process
 
@@ -634,6 +631,10 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
                     pass
         super().append(str(value))
 
+    def insert(self, index, value):
+        """Insert Value at Index."""
+        return NotImplemented
+
     def append_key_value_pair(self, key, value, *args, **kwargs):
         """Append Key Value Pair to Config."""
         return self.append(kv_string(key, value), *args, **kwargs)
@@ -661,6 +662,10 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
         """Add to Config In Place."""
         self.extend(list(other))
         return self
+
+    def with_arguments(self, *args):
+        """Add Arguments to Config."""
+        self.append_key_value_pair('arguments', condor_format_sequence(args))
 
     def append_comments(self, *comments):
         """Add Comments to Config."""
@@ -696,6 +701,35 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
     def queue(self, *args):
         """Add Queue to Config."""
         self.append(f'queue{(" " + condor_format_sequence(args)) if args else ""}')
+
+
+def minimal_config(
+    name,
+    executable,
+    directory,
+    *,
+    config_ext='cfg',
+    log_ext='log',
+    out_ext='out',
+    error_ext='err',
+    use_absolute_paths=True,
+    keep_env=False
+):
+    """Construct Minimal Job Configuration."""
+    directory = Path(directory)
+    build_path = lambda ext: directory / f'{name}.{ext}'
+    if use_absolute_paths:
+        build_path = lambda ext: build_path(ext).abspath()
+    config = JobConfig(path=build_path(config_ext))
+    config.name = property(lambda s: name)
+    with config.write_mode as config:
+        config.executable = Path(executable).abspath()
+        config.log = build_path(log_ext)
+        config.getenv = keep_env
+        config.initialdir = directory.abspath() if use_absolute_paths else directory
+        config.output = build_path(out_ext)
+        config.error = build_path(error_ext)
+    return config
 
 
 def submit_config(config, path=None, logfile=None, *args, **kwargs):
