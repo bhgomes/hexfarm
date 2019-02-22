@@ -113,9 +113,10 @@ class classproperty(property):
         super().__delete__(type(obj))
 
 
-def attempt_import(name, package=package, *, exceptions=None, logger=pass_function):
+def attempt_import(name, package=None, *exceptions, logger=passf):
     """Attempt Package Import With Automatic Exception Handling."""
-    exceptions = value_or(tuple(exceptions), (ImportError, ))
+    if not exceptions:
+        exceptions = (ImportError, ModuleNotFoundError)
     try:
         return import_module(name, package=package)
     except exceptions as error:

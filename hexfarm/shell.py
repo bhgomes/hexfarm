@@ -35,8 +35,9 @@ Utilities for Shell Processes.
 
 import shutil
 import subprocess
+from subprocess import PIPE
 from collections.abc import MutableSet
-from collections import deque
+from collections import deque, namedtuple
 
 # -------------- External Library -------------- #
 
@@ -62,17 +63,6 @@ __all__ = (
 def decoded(output, mode='stdout', encoding='utf-8'):
     """Decode Result of Command."""
     return getattr(output, mode).decode(encoding)
-
-
-class CommandOutput(namedtuple('CommandOutput', ['result', 'process'])):
-    """Command Output Pair."""
-
-    def __getattr__(self, name):
-        """Get Subattributes."""
-        try:
-            return getattr(self.result, name)
-        except AttributeError:
-            return getattr(self.process, name)
 
 
 class Command:
@@ -108,19 +98,26 @@ class Command:
         """Get Full Name of Command."""
         return type(self).prefix + self.name
 
-    def run(self, *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, result_decoded=None, clean_output=None, **kwargs):
+    def _running_args(self, *args):
+        """Collect Running Arguments."""
+        return [self.full_name] + self.__args + list(args)
+
+    def open(self, *args, **kwargs):
+        """Open Process for Given Command."""
+        return psutil.Popen(self._running_args(*args), **kwargs)
+
+    def run(self, *args, stdout=PIPE, stderr=PIPE, result_decoded=None, clean_output=None, **kwargs):
         """Run Command."""
-        result = subprocess.run([self.full_name] + self.__args + list(args),
+        result = subprocess.run(self._running_args(*args),
                                 stdout=stdout,
                                 stderr=stderr,
                                 **self.__kwargs,
                                 **kwargs)
-        process = psutil.Process(result.pid)
         if result_decoded is None:
             result = result if not self._default_decoded else decoded(result)
         else:
             result = result if not result_decoded else decoded(result)
-        return CommandOutput(self._clean_output(result) if clean_output is None else clean_output(result), process)
+        return self._clean_output(result) if clean_output is None else clean_output(result)
 
     def __call__(self, *args, **kwargs):
         """Run Command."""
@@ -148,6 +145,7 @@ class ProcessStore(MutableSet):
     def __init__(self, store=None, *, history_queue=None):
         """Initialize Process Store."""
         self.store = value_or(store, set())
+        # TODO: finish history queue
         if history_queue is True:
             self.history_queue = deque()
         elif history_queue:
@@ -180,8 +178,8 @@ class ProcessStore(MutableSet):
 
     def add_from(self, command, *args, **kwargs):
         """Add Process from Command."""
-        output = command.run(*args, **kwargs)
-        self.add(output.process)
+        output = command.open(*args, **kwargs)
+        self.add(output)
         return output
 
     def _process_map(self, process, function, *exceptions):
