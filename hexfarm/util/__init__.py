@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/util.py
+# hexfarm/util/__init__.py
 #
 #
 # MIT License
@@ -36,6 +36,10 @@ Hexfarm Utilities.
 from importlib import import_module
 from functools import partial
 
+# -------------- External Library -------------- #
+
+from toolz.functoolz import compose
+
 # -------------- Hexfarm  Library -------------- #
 
 
@@ -43,6 +47,7 @@ __all__ = (
     'passf',
     'identity',
     'flip',
+    'compose',
     'map_value_or',
     'value_or',
     'instance_of',
