@@ -41,10 +41,12 @@ import time
 import numpy as np
 import scipy as sci
 import sympy as sym
+import pandas as pd
+import matplotlib.pyplot as plt
 
 # -------------- Hexfarm  Library -------------- #
 
-from .condor import HTCONDOR_INSTALLED
+from .condor import HTCONDOR_INSTALLED, CLASSAD_INSTALLED
 from .cli import run_main
 from .shell import ME, decoded
 from .util import *

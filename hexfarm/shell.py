@@ -35,6 +35,12 @@ Utilities for Shell Processes.
 
 import shutil
 import subprocess
+from collections.abc import MutableSet
+from collections import deque
+
+# -------------- External Library -------------- #
+
+import psutil
 
 # -------------- Hexfarm  Library -------------- #
 
@@ -43,17 +49,30 @@ from .util import identity, classproperty
 
 __all__ = (
     'decoded',
+    'CommandOutput',
     'Command',
     'which',
     'whoami',
     'me',
-    'ME'
+    'ME',
+    'ProcessStore'
 )
 
 
 def decoded(output, mode='stdout', encoding='utf-8'):
     """Decode Result of Command."""
     return getattr(output, mode).decode(encoding)
+
+
+class CommandOutput(namedtuple('CommandOutput', ['result', 'process'])):
+    """Command Output Pair."""
+
+    def __getattr__(self, name):
+        """Get Subattributes."""
+        try:
+            return getattr(self.result, name)
+        except AttributeError:
+            return getattr(self.process, name)
 
 
 class Command:
@@ -64,9 +83,7 @@ class Command:
 
     def __init_subclass__(cls, prefix=None):
         """Initialzie Command Subclasses."""
-        def prefix_fget(clas):
-            return prefix
-        cls.prefix = classproperty(fget=prefix_fget)
+        cls.prefix = classproperty(fget=lambda c: prefix)
 
     @classproperty
     def prefix(cls):
@@ -98,11 +115,12 @@ class Command:
                                 stderr=stderr,
                                 **self.__kwargs,
                                 **kwargs)
+        process = psutil.Process(result.pid)
         if result_decoded is None:
             result = result if not self._default_decoded else decoded(result)
         else:
             result = result if not result_decoded else decoded(result)
-        return self._clean_output(result) if clean_output is None else clean_output(result)
+        return CommandOutput(self._clean_output(result) if clean_output is None else clean_output(result), process)
 
     def __call__(self, *args, **kwargs):
         """Run Command."""
@@ -122,3 +140,90 @@ which = Command('which', default_decoded=True, clean_output=lambda o: o.strip())
 me = whoami = Command('whoami', default_decoded=True, clean_output=lambda o: o.strip())
 
 ME = me()
+
+
+class ProcessStore(MutableSet):
+    """Process Storage."""
+
+    def __init__(self, store=None, *, history_queue=None):
+        """Initialize Process Store."""
+        self.store = value_or(store, set())
+        if history_queue is True:
+            self.history_queue = deque()
+        elif history_queue:
+            self.history_queue = history_queue
+
+    def add(self, process):
+        """Add Process to Store."""
+        self.store.add(process)
+
+    def discard(self, process):
+        """Discard Process from Store."""
+        self.store.discard(process)
+
+    def __contains__(self, elem):
+        """Check if Process is in Store."""
+        if not elem in self.store:
+            try:
+                return psutil.Process(elem) in self.store
+            except Exception:
+                return False
+        return True
+
+    def __iter__(self):
+        """Iterate Over All Processes."""
+        return iter(self.store)
+
+    def __len__(self):
+        """Length of Process Store."""
+        return len(self.store)
+
+    def add_from(self, command, *args, **kwargs):
+        """Add Process from Command."""
+        output = command.run(*args, **kwargs)
+        self.add(output.process)
+        return output
+
+    def _process_map(self, process, function, *exceptions):
+        """Apply Function on Process."""
+        if process in self:
+            if not exceptions:
+                exceptions = (Exception, )
+            try:
+                return function(process), None
+            except exceptions as initial_error:
+                return function(psutil.Process(process)), initial_error
+        else:
+            raise KeyError('Missing Process to Kill.')
+
+    def kill(self, process):
+        """Kill Process."""
+        self._process_map(process, lambda p: p.kill(), AttributeError)
+
+    def pop_kill(self, process):
+        """Kill Object and Pop from Store."""
+        self.kill(process)
+        self.discard(process)
+
+    def suspend(self, process):
+        """Suspend Process."""
+        self._process_map(process, lambda p: p.suspend(), AttributeError)
+
+    def pop_suspend(self, process):
+        """Kill Object and Pop from Store."""
+        self.suspend(process)
+        self.discard(process)
+
+    def remove_if_missing(self, process):
+        """Remove Process if Missing."""
+        if not process.is_running():
+            self.store.remove(process)
+
+    def sync(self, *subset):
+        """Synchronize Store with Current Running Processes."""
+        if subset:
+            for elem in filter(lambda e: e in self, subset):
+                self.remove_if_missing(elem)
+        else:
+            for process in list(self.store):
+                self.remove_if_missing(process)

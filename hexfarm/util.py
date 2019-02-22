@@ -33,12 +33,14 @@ Hexfarm Utilities.
 
 # -------------- Standard Library -------------- #
 
+from importlib import import_module
 from functools import partial
 
 # -------------- Hexfarm  Library -------------- #
 
 
 __all__ = (
+    'passf',
     'identity',
     'flip',
     'map_value_or',
@@ -47,8 +49,12 @@ __all__ = (
     'subclass_of',
     'subdict',
     'classproperty',
+    'attempt_import'
 )
 
+
+def passf(*args, **kwargs):
+    """Does Nothing."""
 
 def identity(x):
     """Identity Function."""
@@ -105,3 +111,13 @@ class classproperty(property):
     def __delete__(self, obj):
         """Wrap Deleter Function."""
         super().__delete__(type(obj))
+
+
+def attempt_import(name, package=package, *, exceptions=None, logger=pass_function):
+    """Attempt Package Import With Automatic Exception Handling."""
+    exceptions = value_or(tuple(exceptions), (ImportError, ))
+    try:
+        return import_module(name, package=package)
+    except exceptions as error:
+        logger(error)
+    return None

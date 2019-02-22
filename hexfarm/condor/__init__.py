@@ -39,14 +39,13 @@ import logging
 
 from .core import *
 from .daemon import clean_source, PseudoDaemon
+from ..util import attempt_import
 
 
 logger = logging.getLogger(__name__)
 
-HTCONDOR_INSTALLED = False
+htcondor = attempt_import('htcondor', logger=lambda e: logger.info('HTCondor could not be imported.'))
+classad = attempt_import('classad', logger=lambda e: logger.info('HTCondor ClassAd could not be imported.'))
 
-try:
-    import htcondor
-    HTCONDOR_INSTALLED = True
-except Exception:
-    logger.info('HTCondor could not be imported.')
+HTCONDOR_INSTALLED = htcondor is not None
+CLASSAD_INSTALLED = classad is not None

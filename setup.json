@@ -41,10 +41,11 @@
         "dataclasses",
         "paramiko",
         "keyring",
-        "inflection"
+        "inflection",
+        "psutil"
     ],
     "extras_require": {
-        "condor": ["htcondor"]
+        "condor": ["htcondor", "classad"]
     },
     "include_package_data": true,
     "license": "MIT",
