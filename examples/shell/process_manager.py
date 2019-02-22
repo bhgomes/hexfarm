@@ -1,11 +1,12 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/ml/__init__.py
+# examples/shell/process_manager.py
 #
 #
 # MIT License
 #
-# Copyright (c) 2019 Brandon Gomes
+# Copyright (c) 2018-2019 Brandon Gomes
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,13 +28,33 @@
 #
 
 """
-Hexfarm Machine Learning Library.
+Basic Process Manager Example.
 
 """
 
-# -------------- External Library -------------- #
-
-import keras
-import tensorflow as tf
-
 # -------------- Hexfarm  Library -------------- #
+
+from hexfarm import run_main
+from hexfarm.shell import Command, ProcessStore
+
+
+STARTING_COUNT = 10
+PROCESS_SLEEP_TIME = 2
+FINISH_AFTER = 100
+
+
+@run_main()
+def main(argv):
+    """Simple Process Manager."""
+    command = Command('echo', '"hello there...";', f'sleep {PROCESS_SLEEP_TIME};')
+    processes = ProcessStore()
+    for _ in range(STARTING_COUNT):
+        processes.add_from(command)
+    print(processes)
+
+    counter = 0
+    while counter < FINISH_AFTER:
+        if not processes:
+            processes.add_from(command)
+        print(processes)
+        counter += 1

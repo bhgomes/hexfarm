@@ -32,6 +32,7 @@
         "uproot",
         "histbook",
         "rootpy",
+        "root_numpy",
         "particle",
         "numpythia",
         "formulate",

@@ -140,7 +140,7 @@ class ProcessStore(MutableSet):
     def __init__(self, store=None, *, history_queue=None):
         """Initialize Process Store."""
         self.store = value_or(store, set())
-        # TODO: finish history queue
+        # TODO: implement history queue
         if history_queue is True:
             self.history_queue = deque()
         elif history_queue:
@@ -173,6 +173,14 @@ class ProcessStore(MutableSet):
     def __len__(self):
         """Length of Process Store."""
         return len(self.store)
+
+    def __repr__(self):
+        """"""
+        return f'{type(self).__name__}({self.store})'
+
+    def __str__(self):
+        """"""
+        return repr(self)
 
     def add_from(self, command, *args, **kwargs):
         """Add Process from Command."""

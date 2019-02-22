@@ -38,6 +38,7 @@ from path import Path
 import uproot
 import uproot_methods
 import rootpy
+import root_numpy
 import histbook
 
 # -------------- Hexfarm  Library -------------- #
