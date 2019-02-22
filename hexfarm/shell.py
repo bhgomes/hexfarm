@@ -49,9 +49,10 @@ from .util import identity, classproperty
 
 
 __all__ = (
+    'PIPE',
     'decoded',
-    'CommandOutput',
     'Command',
+    'man',
     'which',
     'whoami',
     'me',
@@ -123,14 +124,8 @@ class Command:
         """Run Command."""
         return self.run(*args, **kwargs)
 
-    def help(self, *args, **kwargs):
-        """Print Help Mode of Command."""
-        return self('--help', *args, **kwargs)
 
-    def man(self, *args, **kwargs):
-        """Print Man Pages of Command."""
-        return subprocess.run(['man', self.full_name] + list(args), **kwargs)
-
+man = Command('man')
 
 which = Command('which', default_decoded=True, clean_output=lambda o: o.strip())
 
@@ -161,12 +156,15 @@ class ProcessStore(MutableSet):
 
     def __contains__(self, elem):
         """Check if Process is in Store."""
-        if not elem in self.store:
-            try:
-                return psutil.Process(elem) in self.store
-            except Exception:
-                return False
-        return True
+        # FIXME: not using good lookup algorithm
+        try:
+            pid = elem.pid
+        except AttributeError:
+            pid = elem
+        for elem in self.store:
+            if pid == elem.pid:
+                return True
+        return False
 
     def __iter__(self):
         """Iterate Over All Processes."""
