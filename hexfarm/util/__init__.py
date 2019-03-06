@@ -61,6 +61,7 @@ __all__ = (
 def passf(*args, **kwargs):
     """Does Nothing."""
 
+
 def identity(x):
     """Identity Function."""
     return x
