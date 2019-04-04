@@ -9,8 +9,11 @@ export PATH="$HOME/miniconda/bin:$PATH"
 rm miniconda.sh
 
 conda upgrade -n base conda
-conda install pip, root
+conda config --add channels conda-forge
+conda config --add channels rutgers
+conda install git pip root
 
 pip install hexfarm
+# TODO: change to `conda install hexfarm`
 
 conda clean --all
