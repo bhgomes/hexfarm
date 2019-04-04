@@ -1,0 +1,43 @@
+name: hexfarm
+channels:
+  - conda-forge
+dependencies:
+  - ipykernel
+  - ipython
+  - pytest
+  - pytest-cov
+  - coverage
+  - black
+  - numpy
+  - sympy
+  - scipy
+  - pandas
+  - h5py
+  - pytables
+  - pint
+  - uncertainties
+  - pymc3
+  - matplotlib
+  - dask
+  - scikit-learn
+  - scikit-optimize
+  - boltons
+  - toolz
+  - aenum
+  - uproot
+  - iminuit
+  - keras
+  - tensorflow
+  - dataclasses
+  - paramiko
+  - keyring
+  - inflection
+  - psutil
+  - pip
+  - pip:
+      - scikit-hep
+      - particle
+      - scikit-hep
+      - histbook
+      - numpythia
+      - formulate

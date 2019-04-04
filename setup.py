@@ -1,9 +1,8 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # setup.py
 #
-
-SETUP_JSON = 'setup.json'
 
 import io
 import json
@@ -12,6 +11,8 @@ import sys
 import hashlib
 from shutil import rmtree
 from setuptools import setup, find_packages, Command
+
+SETUP_JSON = 'setup.json'
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
@@ -107,7 +108,10 @@ if __name__ == '__main__':
     if 'exclude' in about['packages']:
         about['packages'] = find_packages(exclude=tuple(about['packages']['exclude']))
 
-    conda_build_file = about['conda_build_file']
-    del about['conda_build_file']
-    
+    try:
+        conda_build_file = about['conda_build_file']
+        del about['conda_build_file']
+    except KeyError:
+        pass
+
     setup(cmdclass={Upload.name: Upload}, **about)

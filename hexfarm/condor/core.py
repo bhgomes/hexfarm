@@ -38,8 +38,8 @@ from collections import UserList, deque
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field, InitVar
-from functools import partial
 from itertools import starmap
+from time import time
 from typing import Sequence
 
 # -------------- External Library -------------- #
@@ -560,7 +560,7 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
         if hasattr(self, 'save'):
             raise AttributeError('JobConfig has no attribute _build_path_save_mechanism.')
 
-        def _save(self):
+        def _save(s):
             Path(s.path).write_text(s.as_text)
 
         def _save_as(s, new_path):
@@ -692,7 +692,7 @@ class JobConfig(UserList, WriteModeMixin, write_mode_keywords=CONDOR_SUBMIT_COMM
 
     def transfer_output_remapping(self, **mapping):
         """Transfer File Output Remapping."""
-        self.file_remapping(key='transfer_output_remaps', **kwargs)
+        self.file_remapping(key='transfer_output_remaps', **mapping)
 
     def request_(self, name, value):
         """Special Request Tag."""
@@ -1030,17 +1030,14 @@ class ProcessUnit(ConfigUnitBase,
 
     def queue_in(self, n=1, *args, **kwargs):
         """"""
-        #TODO: implement
         return NotImplemented
 
     def queue_matching(self, n=1, *args, **kwargs):
         """"""
-        #TODO: implement
         return NotImplemented
 
     def queue_from(self, n=1, *args, **kwargs):
         """"""
-        #TODO: implement
         return NotImplemented
 
 
@@ -1177,15 +1174,9 @@ class JobManager:
     def add_config(self, name, config, path=None, logfile=None, jobmap=None, **job_map_options):
         """Add Configuration to JobManager."""
         if path is None:
-            try:
-                path = config.path
-            except AttributeError:
-                pass
+            path = getattr(config, 'path', None)
         if logfile is None:
-            try:
-                logfile = config.log
-            except AttributeError:
-                pass
+            logfile = getattr(config, 'log', None)
         self[name] = ConfigRunner(config, path, logfile, value_or(jobmap, JobMap(**job_map_options)))
         return self[name]
 

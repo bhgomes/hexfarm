@@ -1,0 +1,7 @@
+name: hexfarm-ROOT
+channels:
+  - conda-forge
+dependencies:
+  - root
+  - rootpy
+  - root_numpy
