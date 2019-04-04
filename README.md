@@ -1,5 +1,5 @@
-![RU-HEX Logo](https://raw.githubusercontent.com/bhgomes/hexfarm/master/docs/_static/ru_hex.png)
 <div align="center">
+<img src="https://raw.githubusercontent.com/bhgomes/hexfarm/master/docs/_static/ru_hex.png" alt="" width="400"/>
 
 # hexfarm (_pre-α_)
 _Rutgers HEX Computing Utility Library_
