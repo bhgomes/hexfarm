@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/config.py
+# tests/test_imports.py
 #
 #
 # MIT License
@@ -27,17 +27,28 @@
 #
 
 """
-Hexfarm Configuration Library.
+HexFarm Test Suite.
 
 """
 
-# -------------- Standard Library -------------- #
 
-import logging
-
-# -------------- External Library -------------- #
-
-# -------------- Hexfarm  Library -------------- #
+def test_basic_import():
+    import hexfarm
 
 
-LOGGER = logging.getLogger(__name__)
+def test_complete_import():
+    import hexfarm
+    import hexfarm.condor
+    import hexfarm.ml
+    import hexfarm.cli
+    import hexfarm.config
+    import hexfarm.fs
+    import hexfarm.gen
+    import hexfarm.io
+    import hexfarm.optimize
+    import hexfarm.plotting
+    import hexfarm.root
+    import hexfarm.shell
+    import hexfarm.sim
+    import hexfarm.stats
+    import hexfarm.units

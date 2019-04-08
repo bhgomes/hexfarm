@@ -30,3 +30,10 @@
 Hexfarm Iteration Utilities.
 
 """
+
+# -------------- External Library -------------- #
+
+from toolz.itertoolz import *
+from boltons.iterutils import *
+
+# -------------- Hexfarm  Library -------------- #

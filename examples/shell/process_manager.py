@@ -46,7 +46,7 @@ FINISH_AFTER = 100
 @run_main()
 def main(argv):
     """Simple Process Manager."""
-    command = Command('echo', '"hello there...";', f'sleep {PROCESS_SLEEP_TIME};')
+    command = Command("echo", '"hello there...";', f"sleep {PROCESS_SLEEP_TIME};")
     processes = ProcessStore()
     for _ in range(STARTING_COUNT):
         processes.add_from(command)

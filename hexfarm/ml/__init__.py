@@ -31,9 +31,22 @@ Hexfarm Machine Learning Library.
 
 """
 
+# -------------- Standard Library -------------- #
+
+import logging
+
 # -------------- External Library -------------- #
 
 import keras
+import torch
+from torch import nn
+import sonnet as snt
 import tensorflow as tf
+import sklearn
+import hep_ml
+import madminer.ml
 
 # -------------- Hexfarm  Library -------------- #
+
+
+LOGGER = logging.getLogger(__name__)

@@ -33,22 +33,26 @@ HexFarm Utility Library.
 
 # -------------- Standard Library -------------- #
 
-import sys
-import time
+import logging
 
 # -------------- External Library -------------- #
 
 import numpy as np
-import scipy as sci
 import sympy as sym
 import pandas as pd
-import matplotlib.pyplot as plt
+
+import scipy
+import skhep
 
 # -------------- Hexfarm  Library -------------- #
 
-from .condor import HTCONDOR_INSTALLED, CLASSAD_INSTALLED
+from .condor import HTCONDOR_SUPPORT, CLASSAD_SUPPORT
 from .cli import run_main
 from .shell import ME, decoded
+from .plotting import plt
 from .util import *
 
 from ._version import __version_info__, __version__
+
+
+LOGGER = logging.getLogger(__name__)

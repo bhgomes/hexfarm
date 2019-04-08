@@ -42,10 +42,9 @@ from .daemon import clean_source, PseudoDaemon
 from ..util import attempt_import
 
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
-htcondor = attempt_import('htcondor', logger=lambda e: logger.info('HTCondor could not be imported.'))
-classad = attempt_import('classad', logger=lambda e: logger.info('HTCondor ClassAd could not be imported.'))
 
-HTCONDOR_INSTALLED = htcondor is not None
-CLASSAD_INSTALLED = classad is not None
+htcondor, HTCONDOR_SUPPORT = attempt_import("htcondor")
+
+classad, CLASSAD_SUPPORT = attempt_import("classad")

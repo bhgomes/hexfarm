@@ -35,13 +35,12 @@ Utilities for CLI Programs.
 
 import sys
 from functools import wraps
+import logging
 
 # -------------- Hexfarm  Library -------------- #
 
 
-__all__ = (
-    'run_main'
-)
+LOGGER = logging.getLogger(__name__)
 
 
 def run_main(
@@ -53,14 +52,17 @@ def run_main(
     check_name_is_main=False
 ):
     """Run Main Function with Given Arguments and Exit Process."""
+
     def internal(main):
         @wraps(main)
         def wrapper():
             return exit(main(argv[1:] if ignore_arg_zero else argv))
+
         if auto_run:
-            if check_name_is_main and __name__ == '__main__':
+            if check_name_is_main and __name__ == "__main__":
                 wrapper()
             else:
                 wrapper()
         return wrapper
+
     return internal

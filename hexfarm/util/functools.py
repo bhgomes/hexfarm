@@ -30,3 +30,10 @@
 Hexfarm Functional Programming Utilities.
 
 """
+
+# -------------- External Library -------------- #
+
+from toolz.functoolz import *
+from boltons.funcutils import *
+
+# -------------- Hexfarm  Library -------------- #

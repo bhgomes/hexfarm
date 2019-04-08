@@ -35,24 +35,22 @@ Utilities for IO.
 
 import os
 import stat
+import logging
 
 # -------------- External Library -------------- #
 
+import lxml
+from lxml import etree
+from boltons.ioutils import *
 from path import Path
+from madminer.lhe import LHEReader
 
 # -------------- Hexfarm  Library -------------- #
 
 from .util import identity
 
 
-__all__ = (
-    'has_extension',
-    'walk_paths',
-    'fwalk_paths',
-    'add_execute_permissions',
-    'build_executable',
-    'format_file'
-)
+LOGGER = logging.getLogger(__name__)
 
 
 def has_extension(ext, path):
@@ -61,40 +59,39 @@ def has_extension(ext, path):
 
 
 def walk_paths(
-        directory,
-        dir_predicate=identity,
-        file_predicate=identity,
-        *,
-        topdown=True,
-        onerror=None,
-        followlinks=False,
-        **kwargs
-    ):
+    directory,
+    dir_predicate=identity,
+    file_predicate=identity,
+    *,
+    topdown=True,
+    onerror=None,
+    followlinks=False
+):
     """Walk Paths Filtering Directories and Files."""
-    for root, dirs, files in os.walk(directory,
-                                     topdown=topdown,
-                                     onerror=onerror,
-                                     followlinks=followlinks):
+    for root, dirs, files in os.walk(
+        directory, topdown=topdown, onerror=onerror, followlinks=followlinks
+    ):
         yield root, filter(dir_predicate, dirs), filter(file_predicate, files)
 
 
 def fwalk_paths(
-        directory,
-        dir_predicate=identity,
-        file_predicate=identity,
-        *,
-        topdown=True,
-        onerror=None,
-        follow_symlinks=False,
-        dir_fd=None,
-        **kwargs
-    ):
+    directory,
+    dir_predicate=identity,
+    file_predicate=identity,
+    *,
+    topdown=True,
+    onerror=None,
+    followlinks=False,
+    dir_fd=None
+):
     """Walk Paths Filtering Directories and Files."""
-    for root, dirs, files, rootfd in os.fwalk(directory,
-                                              topdown=topdown,
-                                              onerror=onerror,
-                                              followlinks=followlinks,
-                                              dir_fd=dir_fd):
+    for root, dirs, files, rootfd in os.fwalk(
+        directory,
+        topdown=topdown,
+        onerror=onerror,
+        followlinks=followlinks,
+        dir_fd=dir_fd,
+    ):
         yield root, filter(dir_predicate, dirs), filter(file_predicate, files), rootfd
 
 
@@ -118,8 +115,8 @@ def build_executable(path, source_code):
 
 def format_file(source, target, **kwargs):
     """Format Input File."""
-    with open(target, 'w') as target_file:
-        with open(source, 'r') as source_file:
+    with open(target, "w") as target_file:
+        with open(source, "r") as source_file:
             for line in source_file:
                 try:
                     target_file.write(line.format(**kwargs))

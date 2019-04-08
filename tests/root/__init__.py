@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/config.py
+# tests/root/__init__.py
 #
 #
 # MIT License
@@ -27,17 +27,6 @@
 #
 
 """
-Hexfarm Configuration Library.
+HexFarm ROOT Test Suite.
 
 """
-
-# -------------- Standard Library -------------- #
-
-import logging
-
-# -------------- External Library -------------- #
-
-# -------------- Hexfarm  Library -------------- #
-
-
-LOGGER = logging.getLogger(__name__)

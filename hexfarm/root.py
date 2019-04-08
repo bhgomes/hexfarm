@@ -31,35 +31,63 @@ ROOT Utilities.
 
 """
 
+# -------------- Standard Library -------------- #
+
+import logging
+
 # -------------- External Library -------------- #
 
 from path import Path
 
 import uproot
 import uproot_methods
-import rootpy
-import root_numpy
 import histbook
+import formulate
 
 # -------------- Hexfarm  Library -------------- #
 
 from .io import has_extension, walk_paths
+from .util import attempt_import
+from .util.functools import partial
 
 
-__all__ = (
-    'traverse_root_files',
-    'chain'
-)
+LOGGER = logging.getLogger(__name__)
+
+
+ROOT, ROOT_SUPPORT = attempt_import("ROOT")
+
+
+if ROOT_SUPPORT:
+    R = ROOT
+    LOGGER.log(logging.INFO, "ROOT Enabled.")
+
+
+rootpy, ROOTPY_SUPPORT = attempt_import("rootpy")
+root_numpy, ROOT_NUMPY_SUPPORT = attempt_import("root_numpy")
+root_pandas, ROOT_PANDAS_SUPPORT = attempt_import("root_pandas")
+root_ufunc, ROOT_UFUNC_SUPPORT = attempt_import("root_ufunc")
+
+
+if ROOTPY_SUPPORT:
+    from rootpy.tree import Tree, TreeModel, Cut
+    from rootpy.tree.categories import Categories
+    from rootpy.io import root_open
+
+
+if ROOT_NUMPY_SUPPORT:
+    from root_numpy import root2array, array2tree, rec2array, fill_hist
 
 
 def traverse_root_files(directory):
     """Collect ROOT Files."""
-    for root, _, files in walk_paths(directory, file_predicate=partial(has_extension, 'root')):
+    for root, _, files in walk_paths(
+        directory, file_predicate=partial(has_extension, "root")
+    ):
         root_path = Path(root)
         yield from (root_path / name for name in files)
 
 
 def chain(directory):
     """"""
-    #TODO:
+    # TODO:
     return NotImplemented

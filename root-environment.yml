@@ -5,3 +5,5 @@ dependencies:
   - root
   - rootpy
   - root_numpy
+  - root_pandas
+  - root_ufunc

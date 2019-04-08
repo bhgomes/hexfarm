@@ -1,0 +1,50 @@
+package:
+  name: hexfarm
+  version: {version}
+
+
+source:
+  url: https://github.com/bhgomes/hexfarm/releases/download/v{version}/hexfarm
+  -{version}.tar.gz
+  sha256: {hash}
+
+
+build:
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+
+
+requirements:
+  build:
+    - git
+    - python
+    - pip
+  run:
+    {run_requirements}
+
+
+test:
+  requires:
+    - pytest
+    - pytest-cov
+    - black
+  commands:
+    - pytest tests/ -sv -ra --cov=hexfarm
+  imports:
+    - hexfarm
+  source_files:
+    - tests
+
+
+about:
+  home: http://github.com/bhgomes/hexfarm
+  license: MIT
+  license_file: LICENSE.md
+  summary: 'Hexfarm.'
+  doc_url: https://hexfarm.readthedocs.io
+  dev_url: https://github.com/bhgomes/hexfarm
+
+
+extra:
+  recipe-maintainers:
+    - bhgomes

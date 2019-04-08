@@ -33,35 +33,41 @@ Utilities for Shell Processes.
 
 # -------------- Standard Library -------------- #
 
+import logging
 import shutil
 import subprocess
 from subprocess import PIPE
 from collections.abc import MutableSet
-from collections import deque, namedtuple
+from collections import deque
 
 # -------------- External Library -------------- #
 
 import psutil
+import plumbum
 
 # -------------- Hexfarm  Library -------------- #
 
 from .util import identity, classproperty
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 __all__ = (
-    'PIPE',
-    'decoded',
-    'Command',
-    'man',
-    'which',
-    'whoami',
-    'me',
-    'ME',
-    'ProcessStore'
+    "LOGGER",
+    "PIPE",
+    "decoded",
+    "Command",
+    "man",
+    "which",
+    "whoami",
+    "me",
+    "ME",
+    "ProcessStore",
 )
 
 
-def decoded(output, mode='stdout', encoding='utf-8'):
+def decoded(output, mode="stdout", encoding="utf-8"):
     """Decode Result of Command."""
     return getattr(output, mode).decode(encoding)
 
@@ -73,15 +79,17 @@ class Command:
     """
 
     def __init_subclass__(cls, prefix=None):
-        """Initialzie Command Subclasses."""
+        """Initialize Command Subclasses."""
         cls.prefix = classproperty(fget=lambda c: prefix)
 
     @classproperty
     def prefix(cls):
         """Default Command Prefix."""
-        return ''
+        return ""
 
-    def __init__(self, name, *args, default_decoded=False, clean_output=identity, **kwargs):
+    def __init__(
+        self, name, *args, default_decoded=False, clean_output=identity, **kwargs
+    ):
         """Initialize Command."""
         self._name = name
         self._default_decoded = default_decoded
@@ -107,29 +115,41 @@ class Command:
         """Open Process for Given Command."""
         return psutil.Popen(self._running_args(*args), **kwargs)
 
-    def run(self, *args, stdout=PIPE, stderr=PIPE, result_decoded=None, clean_output=None, **kwargs):
+    def run(
+        self,
+        *args,
+        stdout=PIPE,
+        stderr=PIPE,
+        result_decoded=None,
+        clean_output=None,
+        **kwargs,
+    ):
         """Run Command."""
-        result = subprocess.run(self._running_args(*args),
-                                stdout=stdout,
-                                stderr=stderr,
-                                **self.__kwargs,
-                                **kwargs)
+        result = subprocess.run(
+            self._running_args(*args),
+            stdout=stdout,
+            stderr=stderr,
+            **self.__kwargs,
+            **kwargs,
+        )
         if result_decoded is None:
             result = result if not self._default_decoded else decoded(result)
         else:
             result = result if not result_decoded else decoded(result)
-        return self._clean_output(result) if clean_output is None else clean_output(result)
+        return (
+            self._clean_output(result) if clean_output is None else clean_output(result)
+        )
 
     def __call__(self, *args, **kwargs):
         """Run Command."""
         return self.run(*args, **kwargs)
 
 
-man = Command('man')
+man = Command("man")
 
-which = Command('which', default_decoded=True, clean_output=lambda o: o.strip())
+which = Command("which", default_decoded=True, clean_output=lambda o: o.strip())
 
-me = whoami = Command('whoami', default_decoded=True, clean_output=lambda o: o.strip())
+me = whoami = Command("whoami", default_decoded=True, clean_output=lambda o: o.strip())
 
 ME = me()
 
@@ -176,7 +196,7 @@ class ProcessStore(MutableSet):
 
     def __repr__(self):
         """"""
-        return f'{type(self).__name__}({self.store})'
+        return f"{type(self).__name__}({self.store})"
 
     def __str__(self):
         """"""
@@ -192,13 +212,13 @@ class ProcessStore(MutableSet):
         """Apply Function on Process."""
         if process in self:
             if not exceptions:
-                exceptions = (Exception, )
+                exceptions = (Exception,)
             try:
                 return function(process), None
             except exceptions as initial_error:
                 return function(psutil.Process(process)), initial_error
         else:
-            raise KeyError('Missing Process to Kill.')
+            raise KeyError("Missing Process to Kill.")
 
     def kill(self, process):
         """Kill Process."""

@@ -43,14 +43,18 @@ import hexfarm.condor as condor
 def main(argv):
     """Build Simple Deamon from simple.py."""
 
-    #FIXME: Not working because Condor Schedd cannot be found when running meta-job
+    # FIXME: Not working because Condor Schedd cannot be found when running meta-job
     #       "ERROR: Can't find address of local schedd"
 
-    executable = 'examples/condor/daemon/simple.py'
+    executable = "examples/condor/daemon/simple.py"
     add_execute_permissions(executable)
-    config = condor.minimal_config('simple_pseudo', executable, '.temp/simple_daemon', keep_env=True)
+    config = condor.minimal_config(
+        "simple_pseudo", executable, ".temp/simple_daemon", keep_env=True
+    )
     config.queue()
-    runner = condor.JobManager().add_config(config.name, config, remove_completed_jobs=True)
+    runner = condor.JobManager().add_config(
+        config.name, config, remove_completed_jobs=True
+    )
     runner.submit()
-    print('Simple Pseudo Submitted!')
+    print("Simple Pseudo Submitted!")
     print(decoded(condor.condor_q(ME)))

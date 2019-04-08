@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/config.py
+# hexfarm/sim.py
 #
 #
 # MIT License
@@ -27,7 +27,7 @@
 #
 
 """
-Hexfarm Configuration Library.
+HexFarm Simulation Library.
 
 """
 
@@ -39,5 +39,14 @@ import logging
 
 # -------------- Hexfarm  Library -------------- #
 
+from .util import attempt_import
+
 
 LOGGER = logging.getLogger(__name__)
+
+
+delphes, DELPHES_SUPPORT = attempt_import("delphes", package="madminer")
+
+
+if DELPHES_SUPPORT:
+    LOGGER.log(logging.INFO, "Madminer-Delphes Enabled.")

@@ -25,7 +25,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-from typing import Any
 
-__version_info__ = (0, 0, 7)
+__version_info__ = (0, 0, 8)
 __version__ = ".".join(map(str, __version_info__))

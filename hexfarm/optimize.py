@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/config.py
+# hexfarm/optimize.py
 #
 #
 # MIT License
 #
-# Copyright (c) 2018-2019 Brandon Gomes
+# Copyright (c) 2019 Brandon Gomes
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@
 #
 
 """
-Hexfarm Configuration Library.
+Hexfarm Utilities for Optimization.
 
 """
 
@@ -37,7 +37,18 @@ import logging
 
 # -------------- External Library -------------- #
 
+import iminuit
+from iminuit import Minuit
+import probfit
+import scipy.optimize
+import zfit
+
 # -------------- Hexfarm  Library -------------- #
+
+from .util import attempt_import
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+goofit, GOOFIT_SUPPORT = attempt_import("goofit")

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/config.py
+# hexfarm/stats.py
 #
 #
 # MIT License
@@ -27,7 +27,7 @@
 #
 
 """
-Hexfarm Configuration Library.
+HexFarm Statistics Library.
 
 """
 
@@ -36,6 +36,11 @@ Hexfarm Configuration Library.
 import logging
 
 # -------------- External Library -------------- #
+
+import pystan
+import pymc3 as pm
+import scipy.stats as st
+import boltons.statsutils as util
 
 # -------------- Hexfarm  Library -------------- #
 

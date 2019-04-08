@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/config.py
+# hexfarm/fs.py
 #
 #
 # MIT License
@@ -27,7 +27,7 @@
 #
 
 """
-Hexfarm Configuration Library.
+Hexfarm Filesystem Utilities.
 
 """
 
@@ -36,6 +36,10 @@ Hexfarm Configuration Library.
 import logging
 
 # -------------- External Library -------------- #
+
+from path import Path
+from fs import open_fs
+from fs.base import FS
 
 # -------------- Hexfarm  Library -------------- #
 

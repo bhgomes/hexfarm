@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/optimization.py
+# hexfarm/gen.py
 #
 #
 # MIT License
 #
-# Copyright (c) 2019 Brandon Gomes
+# Copyright (c) 2018-2019 Brandon Gomes
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,13 +27,26 @@
 #
 
 """
-Utilities for Optimization.
+HexFarm Event Generation Library.
 
 """
 
+# -------------- Standard Library -------------- #
+
+import logging
+
 # -------------- External Library -------------- #
 
-import iminuit
-import scipy.optimize
+import pyhepmc_ng as hepmc
+import numpythia
+import particle
+import decaylanguage
+import decaylanguage.decay as decay
+import pyjet
+import madminer
+from madminer.core import MadMiner
 
 # -------------- Hexfarm  Library -------------- #
+
+
+LOGGER = logging.getLogger(__name__)

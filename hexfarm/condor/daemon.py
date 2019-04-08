@@ -47,55 +47,55 @@ from ..util import classproperty, value_or
 from .core import *
 
 
-__all__ = (
-    'clean_source',
-    'ssh_connection',
-    'sftp_connection',
-    'get_data',
-    'put_data'
-)
+__all__ = ("clean_source", "ssh_connection", "sftp_connection", "get_data", "put_data")
 
 
-def ssh_connection(hostname, port=22, username=None, password=None, *, missing_host_key_policy=AutoAddPolicy, **kwargs):
+def ssh_connection(
+    hostname,
+    port=22,
+    username=None,
+    password=None,
+    *,
+    missing_host_key_policy=AutoAddPolicy,
+    **kwargs
+):
     """Establish SSH Connection."""
     client = SSHClient()
     client.set_missing_host_key_policy(missing_host_key_policy())
-    connection = client.connect(hostname=hostname,
-                                port=port,
-                                username=username,
-                                assword=password,
-                                **kwargs)
+    connection = client.connect(
+        hostname=hostname, port=port, username=username, password=password, **kwargs
+    )
     return connection, client
 
 
 def sftp_connection(hostname, port=22, username=None, password=None, *args, **kwargs):
     """Establish SFTP Connection."""
-    connection, client = ssh_connection(hostname,
-                                        port=port,
-                                        username=username,
-                                        password=password,
-                                        *args,
-                                        **kwargs)
+    connection, client = ssh_connection(
+        hostname, port=port, username=username, password=password, *args, **kwargs
+    )
     return connection, client.open_sftp()
 
 
 def get_data(connection, *, remove_source=False):
     """Get Data from Connection."""
+
     def inner_get(localpath, remotepath):
-        atrributes = connection.put(localpath, remotepath)
+        attributes = connection.put(localpath, remotepath)
         if remove_source:
             try:
                 connection.remove(remotepath)
             except IOError:
                 connection.rmdir(remotepath)
         return attributes
-    return inner_put
+
+    return inner_get
 
 
 def put_data(connection, *, remove_source=False):
     """Put Data Across Connection."""
+
     def inner_put(localpath, remotepath):
-        atrributes = connection.put(localpath, remotepath)
+        attributes = connection.put(localpath, remotepath)
         if remove_source:
             localpath = Path(localpath)
             if localpath.isdir():
@@ -103,6 +103,7 @@ def put_data(connection, *, remove_source=False):
             elif localpath.isfile():
                 localpath.remove_p()
         return attributes
+
     return inner_put
 
 
@@ -115,7 +116,8 @@ class PseudoDaemon:
     @classproperty
     def source_header(cls):
         """Default Source Header."""
-        return clean_source('''
+        return clean_source(
+            """
             #!/usr/bin/env python3
             # -*- coding: utf-8 -*-
 
@@ -124,31 +126,38 @@ class PseudoDaemon:
             import logging
 
             logger = logging.getLogger(__name__)
-            ''')
+            """
+        )
 
     @classproperty
     def source_hexfarm_import(cls):
         """Default Hexfarm Import."""
-        return 'from hexfarm import run_main'
+        return "from hexfarm import run_main"
 
     @classproperty
     def source_footer(cls):
         """Default Footer."""
-        return '\n\n'
+        return "\n\n"
 
     @classproperty
     def default_source(cls):
         """Default Source Code."""
-        return '\n\n'.join((cls.source_header,
-                            cls.source_hexfarm_import,
-                            clean_source('''
+        return "\n\n".join(
+            (
+                cls.source_header,
+                cls.source_hexfarm_import,
+                clean_source(
+                    """
                                 @run_main()
                                 def main(argv):
                                     argv = argv[1:]
                                     print(argv, len(argv), 'args')
                                     return 0
-                                '''),
-                            cls.source_footer))
+                                """
+                ),
+                cls.source_footer,
+            )
+        )
 
     def __init__(self, name):
         """Initialize PseudoDaemon."""
@@ -157,7 +166,7 @@ class PseudoDaemon:
     @property
     def is_built_from_source(self):
         """Check if Daemon is Built From Source Code."""
-        return hasattr(self, source)
+        return hasattr(self, "source")
 
     def start(self, *args, **kwargs):
         """Start PseudoDaemon."""

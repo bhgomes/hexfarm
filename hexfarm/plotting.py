@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/config.py
+# hexfarm/plotting.py
 #
 #
 # MIT License
@@ -27,7 +27,7 @@
 #
 
 """
-Hexfarm Configuration Library.
+HexFarm Plotting Library.
 
 """
 
@@ -37,7 +37,19 @@ import logging
 
 # -------------- External Library -------------- #
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 # -------------- Hexfarm  Library -------------- #
+
+from .root import ROOTPY_SUPPORT
+
+
+if ROOTPY_SUPPORT:
+    from rootpy.plotting import *
+
+
+# TODO: add matplotlib_hep functions
 
 
 LOGGER = logging.getLogger(__name__)

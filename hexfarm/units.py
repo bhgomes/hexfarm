@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/config.py
+# hexfarm/units.py
 #
 #
 # MIT License
@@ -27,7 +27,7 @@
 #
 
 """
-Hexfarm Configuration Library.
+HexFarm Units Library.
 
 """
 
@@ -37,7 +37,17 @@ import logging
 
 # -------------- External Library -------------- #
 
+from pint import UnitRegistry, set_application_registry
+import hepunits
+import unyt
+
 # -------------- Hexfarm  Library -------------- #
+
+U = UnitRegistry()
+Q_ = U.Quantity
+set_application_registry(U)
+
+# TODO: extend unyt and hepunits into pint if no overlap exists
 
 
 LOGGER = logging.getLogger(__name__)

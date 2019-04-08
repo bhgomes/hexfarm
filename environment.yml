@@ -1,43 +1,77 @@
 name: hexfarm
 channels:
   - conda-forge
+  - pytorch
+  - pyviz
 dependencies:
   - ipykernel
   - ipython
   - pytest
   - pytest-cov
   - coverage
+  - pylint
+  - flake8
   - black
   - numpy
+  - xarray
   - sympy
   - scipy
   - pandas
   - h5py
   - pytables
   - pint
+  - unyt
   - uncertainties
   - pymc3
+  - pystan
   - matplotlib
+  - seaborn
+  - pyviz
   - dask
   - scikit-learn
   - scikit-optimize
+  - scikit-build
   - boltons
   - toolz
   - aenum
+  - lxml
+  - lz4
+  - python-blosc
+  - joblib
   - uproot
   - iminuit
   - keras
   - tensorflow
+  - tensorflow-probability
+  - pytorch
   - dataclasses
+  - attrs
   - paramiko
   - keyring
   - inflection
   - psutil
+  - plumbum
+  - path.py
+  - python-box
+  - wrapt
+  - fs
+  - hepmc
+  - pybind11
   - pip
   - pip:
+      - dm-sonnet
+      - madminer
+      - hep_ml
       - scikit-hep
       - particle
-      - scikit-hep
+      - decaylanguage
       - histbook
       - numpythia
+      - pyhepmc-ng
+      - pyjet
       - formulate
+      - probfit
+      - zfit
+      - hepunits
+      # TODO: - goofit
+      - pyhf

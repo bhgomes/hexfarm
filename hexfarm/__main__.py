@@ -43,6 +43,6 @@ from .cli import run_main
 @run_main()
 def main(argv):
     """Main Function."""
-    print('NotImplemented')
-    print('argv={argv}'.format(argv=argv))
+    print("NotImplemented")
+    print("argv={argv}".format(argv=argv))
     return 0
