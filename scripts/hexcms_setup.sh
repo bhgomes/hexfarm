@@ -11,7 +11,7 @@ rm miniconda.sh
 conda upgrade -n base conda
 conda config --add channels conda-forge
 conda config --add channels rutgers
-conda install git pip root
+conda install git pip
 
 pip install hexfarm
 # TODO: change to `conda install hexfarm`

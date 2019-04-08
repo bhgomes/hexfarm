@@ -17,4 +17,35 @@ _Rutgers HEX Computing Utility Library_
 
 ## Documentation
 
-[hexfarm.readthedocs.io](https://hexfarm.readthedocs.io)
+The documentation is hosted at [hexfarm.readthedocs.io](https://hexfarm.readthedocs.io). This is a WIP.
+
+
+## Installation for Rutgers HEXCMS Users
+
+See [`scripts/README.md`](scripts/README.md).
+
+
+## Installing Development Environment
+
+To install the development environment for `hexfarm` clone the repository and 
+run the following
+
+```bash
+conda env update -f environment.yml --prune
+conda activate hexfarm
+```
+
+To add the optional `ROOT` dependencies, run
+
+```bash
+conda env update -n hexfarm -f root-environment.yml
+conda activate hexfarm
+```
+
+after initializing the `hexfarm` environment.
+
+See [`scripts/README.md`](scripts/README.md) for more information on environments.
+
+---
+
+Copyright (c) 2018-2019 Brandon Gomes under the [MIT Open Source License](LICENSE).

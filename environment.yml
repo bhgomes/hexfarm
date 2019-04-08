@@ -55,7 +55,6 @@ dependencies:
   - python-box
   - wrapt
   - fs
-  - hepmc
   - pybind11
   - pip
   - pip:
