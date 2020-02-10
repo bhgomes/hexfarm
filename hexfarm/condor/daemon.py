@@ -47,7 +47,14 @@ from ..util import classproperty, value_or
 from .core import *
 
 
-__all__ = ("clean_source", "ssh_connection", "sftp_connection", "get_data", "put_data")
+__all__ = (
+    "clean_source",
+    "ssh_connection",
+    "sftp_connection",
+    "get_data",
+    "put_data",
+    "PseudoDaemon",
+)
 
 
 def ssh_connection(

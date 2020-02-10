@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*- #
 #
-# hexfarm/ml/__init__.py
+# tests/util/__init__.py
 #
 #
 # MIT License
 #
-# Copyright (c) 2019 Brandon Gomes
+# Copyright (c) 2018-2019 Brandon Gomes
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,36 +27,6 @@
 #
 
 """
-Hexfarm Machine Learning Library.
+Utilities Test Suite.
 
 """
-
-# -------------- Standard Library -------------- #
-
-import logging
-
-# -------------- External Library -------------- #
-
-import keras
-import torch
-from torch import nn
-import sonnet as snt
-import tensorflow as tf
-import sklearn
-
-# -------------- Hexfarm  Library -------------- #
-
-from ..util import try_import
-
-
-LOGGER = logging.getLogger(__name__)
-
-
-hep_ml, HEP_ML_SUPPORT = try_import("hep_ml", log_error=LOGGER.info)
-
-
-madminer, MADMINER_SUPPORT = try_import("madminer", log_error=LOGGER.info)
-
-
-if MADMINER_SUPPORT:
-    import madminer.ml

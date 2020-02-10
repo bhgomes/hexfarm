@@ -47,14 +47,14 @@ import formulate
 # -------------- Hexfarm  Library -------------- #
 
 from .io import has_extension, walk_paths
-from .util import attempt_import
+from .util import try_import
 from .util.functools import partial
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-ROOT, ROOT_SUPPORT = attempt_import("ROOT")
+ROOT, ROOT_SUPPORT = try_import("ROOT", log_error=LOGGER.info)
 
 
 if ROOT_SUPPORT:
@@ -62,10 +62,13 @@ if ROOT_SUPPORT:
     LOGGER.log(logging.INFO, "ROOT Enabled.")
 
 
-rootpy, ROOTPY_SUPPORT = attempt_import("rootpy")
-root_numpy, ROOT_NUMPY_SUPPORT = attempt_import("root_numpy")
-root_pandas, ROOT_PANDAS_SUPPORT = attempt_import("root_pandas")
-root_ufunc, ROOT_UFUNC_SUPPORT = attempt_import("root_ufunc")
+rootpy, ROOTPY_SUPPORT = try_import("rootpy", log_error=LOGGER.info)
+
+root_numpy, ROOT_NUMPY_SUPPORT = try_import("root_numpy", log_error=LOGGER.info)
+
+root_pandas, ROOT_PANDAS_SUPPORT = try_import("root_pandas", log_error=LOGGER.info)
+
+root_ufunc, ROOT_UFUNC_SUPPORT = try_import("root_ufunc", log_error=LOGGER.info)
 
 
 if ROOTPY_SUPPORT:

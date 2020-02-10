@@ -31,9 +31,18 @@ Hexfarm Utilities.
 
 """
 
+# -------------- Standard  Library -------------- #
+
+import logging
+
 # -------------- Hexfarm  Library -------------- #
 
 from .core import *
 
 
-BoxObject, BOXOBJECT_SUPPORT = attempt_import("BoxObject", package="box")
+LOGGER = logging.getLogger(__name__)
+
+
+BoxObject, BOXOBJECT_SUPPORT = try_import(
+    "BoxObject", package="box", log_error=LOGGER.info, default=make_class("BoxObject")
+)

@@ -37,16 +37,29 @@ import logging
 
 # -------------- External Library -------------- #
 
-import pyhepmc_ng as hepmc
 import numpythia
 import particle
 import decaylanguage
 import decaylanguage.decay as decay
-import pyjet
-import madminer
-from madminer.core import MadMiner
+import pyhepmc_ng as hepmc
 
 # -------------- Hexfarm  Library -------------- #
 
+from .util import try_import
+
 
 LOGGER = logging.getLogger(__name__)
+
+
+pyjet, PYJET_SUPPORT = try_import("pyjet", log_error=LOGGER.info)
+
+
+madminer, MADMINER_SUPPORT = try_import("madminer", log_error=LOGGER.info)
+
+
+if MADMINER_SUPPORT:
+    from madminer.core import MadMiner
+else:
+
+    class MadMiner:
+        pass

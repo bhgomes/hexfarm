@@ -8,7 +8,7 @@ bash miniconda.sh -b -p $HOME/.miniconda
 export PATH="$HOME/miniconda/bin:$PATH"
 rm miniconda.sh
 
-conda upgrade -n base conda
+conda upgrade conda
 conda config --add channels conda-forge
 conda config --add channels rutgers
 conda install git pip

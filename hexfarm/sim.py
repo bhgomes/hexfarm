@@ -39,13 +39,13 @@ import logging
 
 # -------------- Hexfarm  Library -------------- #
 
-from .util import attempt_import
+from .util import try_import
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-delphes, DELPHES_SUPPORT = attempt_import("delphes", package="madminer")
+delphes, DELPHES_SUPPORT = try_import("delphes", package="madminer")
 
 
 if DELPHES_SUPPORT:

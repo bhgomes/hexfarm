@@ -41,14 +41,15 @@ import iminuit
 from iminuit import Minuit
 import probfit
 import scipy.optimize
-import zfit
 
 # -------------- Hexfarm  Library -------------- #
 
-from .util import attempt_import
+from .util import try_import
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-goofit, GOOFIT_SUPPORT = attempt_import("goofit")
+goofit, GOOFIT_SUPPORT = try_import("goofit", log_error=LOGGER.info)
+
+zfit, ZFIT_SUPPORT = try_import("zfit", log_error=LOGGER.info)

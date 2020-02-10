@@ -20,3 +20,14 @@ directory and to download the relevant packages from the Anaconda Cloud.
 
 For developers of `hexfarm` who want a separate environment, run this script 
 to install the latest `hexfarm` environment with ROOT.
+
+#### Temporary Setup
+
+To install the `hexfarm` environment directly into your `base` environment use
+
+```bash
+conda env update -n base -f environment.yml
+pip install hexfarm
+```
+
+This will not be needed when `hexfarm` has a completed conda build.

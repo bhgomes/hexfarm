@@ -39,12 +39,12 @@ import logging
 
 from .core import *
 from .daemon import clean_source, PseudoDaemon
-from ..util import attempt_import
+from ..util import try_import
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-htcondor, HTCONDOR_SUPPORT = attempt_import("htcondor")
+htcondor, HTCONDOR_SUPPORT = try_import("htcondor", log_error=LOGGER.info)
 
-classad, CLASSAD_SUPPORT = attempt_import("classad")
+classad, CLASSAD_SUPPORT = try_import("classad", log_error=LOGGER.info)

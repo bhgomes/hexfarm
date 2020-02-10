@@ -46,6 +46,9 @@ after initializing the `hexfarm` environment.
 
 See [`scripts/README.md`](scripts/README.md) for more information on environments.
 
----
 
-Copyright (c) 2018-2019 Brandon Gomes under the [MIT Open Source License](LICENSE).
+## License
+
+This project is licensed under the [MIT Open Source License](LICENSE).
+
+Copyright (c) 2019 Brandon Gomes 

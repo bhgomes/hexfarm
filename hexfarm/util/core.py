@@ -79,8 +79,20 @@ def subclass_of(types):
     return partial(flip(issubclass), types)
 
 
+def make_class(name, parents=(), dct=None):
+    """Build a Class."""
+    return type(name, parents, value_or(dct, {}))
+
+
 def subdict(d, *keys, key_filter=lambda o: o, value_filter=lambda o: o):
-    """Return Subdictionary"""
+    """
+    Return Subdictionary.
+    :param d:
+    :param keys:
+    :param key_filter:
+    :param value_filter:
+    :return:
+    """
     keys = set(d.keys()) - set(keys)
     out = {}
     for k in filter(key_filter, keys):
@@ -106,12 +118,35 @@ class classproperty(property):
         super().__delete__(type(obj))
 
 
-def attempt_import(name, package=None, *exceptions, logger=passf):
-    """Attempt Package Import With Automatic Exception Handling."""
+def try_import(
+    name, package=None, *exceptions, log_error=passf, log_success=passf, default=None
+):
+    """
+    Attempt Package Import With Automatic Exception Handling.
+
+    :param name:
+    :param package:
+    :param exceptions:
+    :param log_error:
+    :param log_success:
+    :param default:
+    :return:
+    """
     if not exceptions:
         exceptions = (ImportError, ModuleNotFoundError)
     try:
-        return import_module(name, package=package), True
-    except exceptions as error:
-        logger(error)
-    return None, False
+        module = import_module(name, package=package)
+        log_success(module)
+        return module, True
+    except exceptions as import_error:
+        try:
+            module = import_module(package)
+            resource = getattr(module, name)
+            log_success(resource)
+            return resource, True
+        except exceptions as import_error:
+            log_error(import_error)
+        except AttributeError as attribute_error:
+            log_error(attribute_error)
+        log_error(import_error)
+    return default, False
